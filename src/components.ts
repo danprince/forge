@@ -1,4 +1,5 @@
-import { atlas, measure, over, pointer, print, restore, save, shadow, SpriteId, sspr } from "./engine";
+import { absolute, align, atlas, color, cursor, Fill, measure, over, pointer, print, rect, rectfill, restore, save, shadow, SpriteId, sspr } from "./engine";
+import { renderAbove } from "./ui";
 
 /**
  * Draws a panel from a 9-slice sprite, where each slice is 3x3.
@@ -49,4 +50,38 @@ export function button(text: string, x: number, y: number): boolean {
   restore();
 
   return hover && pointer.released;
+}
+
+type TooltipLine = string | [color: Fill, text: string];
+
+export function tooltip(x: number, y: number, lines: TooltipLine[]) {
+  let height = 0;
+  let width = 0;
+  let padding = 2;
+
+  for (let line of lines) {
+    let [w, h] = measure(typeof line === "string" ? line : line[1]);
+    width = Math.max(width, w);
+    height += h;
+  }
+
+  height += padding * 1;
+  width += padding * 1;
+
+  [x, y] = absolute(x, y);
+
+  renderAbove(() => {
+    save();
+    align("left");
+    rectfill(x, y, width, height, "rgba(0, 0, 0, 0.8)");
+    rect(x, y, width, height, "#ccc");
+    cursor(x + padding, y + padding);
+    for (let line of lines) {
+      let fill = typeof line === "string" ? "white" : line[0];
+      let text = typeof line === "string" ? line : line[1];
+      color(fill);
+      print(text);
+    }
+    restore();
+  });
 }
