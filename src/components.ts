@@ -1,4 +1,4 @@
-import { absolute, align, atlas, color, cursor, Fill, measure, over, pointer, print, rect, rectfill, restore, save, shadow, SpriteId, sspr } from "./engine";
+import { relative, align, atlas, color, cursor, Fill, measure, over, pointer, print, rect, rectfill, restore, save, shadow, SpriteId, sspr, absolute } from "./engine";
 import { renderAbove } from "./ui";
 
 /**
@@ -52,12 +52,11 @@ export function button(text: string, x: number, y: number): boolean {
   return hover && pointer.released;
 }
 
-type TooltipLine = string | [color: Fill, text: string];
+export type TextLine = string | [color: Fill, text: string];
 
-export function tooltip(x: number, y: number, lines: TooltipLine[]) {
+export function measureLines(lines: TextLine[]): [w: number, h: number] {
   let height = 0;
   let width = 0;
-  let padding = 2;
 
   for (let line of lines) {
     let [w, h] = measure(typeof line === "string" ? line : line[1]);
@@ -65,19 +64,47 @@ export function tooltip(x: number, y: number, lines: TooltipLine[]) {
     height += h;
   }
 
-  height += padding * 1;
-  width += padding * 1;
+  return [width, height];
+}
 
+export function tooltip(x: number, y: number, lines: TextLine[]) {
+  let padding = 2;
+  let [w, h] = measureLines(lines);
+  h += padding * 1;
+  w += padding * 1;
   [x, y] = absolute(x, y);
 
   renderAbove(() => {
     save();
     align("left");
-    rectfill(x, y, width, height, "rgba(0, 0, 0, 0.8)");
-    rect(x, y, width, height, "#ccc");
+    rectfill(x, y, w, h, "rgba(0, 0, 0, 0.8)");
+    rect(x, y, w, h, "#ccc");
     cursor(x + padding, y + padding);
     for (let line of lines) {
       let fill = typeof line === "string" ? "white" : line[0];
+      let text = typeof line === "string" ? line : line[1];
+      color(fill);
+      print(text);
+    }
+    restore();
+  });
+}
+
+export function scroll(x: number, y: number, lines: TextLine[]) {
+  let px = 3;
+  let py = 2;
+  let [w, h] = measureLines(lines);
+  h += px * 2;
+  w += py * 2;
+  [x, y] = absolute(x, y);
+
+  renderAbove(() => {
+    save();
+    align("left");
+    panel("panel_scroll", x, y, w + 1, h);
+    cursor(x + px, y + py);
+    for (let line of lines) {
+      let fill = typeof line === "string" ? "#584336" : line[0];
       let text = typeof line === "string" ? line : line[1];
       color(fill);
       print(text);

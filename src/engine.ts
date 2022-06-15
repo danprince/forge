@@ -118,11 +118,17 @@ export function color(col: Fill) {
 }
 
 /**
- * Convert coordinates relative to the current transform into absolute
- * canvas coordinates.
+ * Convert relative coordinates to absolute coordinates.
  */
 export function absolute(x: number, y: number): [x: number, y: number] {
   return [x + _state.translateX, y + _state.translateY];
+}
+
+/**
+ * Convert absolute coordinates to relative coordinates.
+ */
+export function relative(x: number, y: number): [x: number, y: number] {
+  return [x - _state.translateX, y - _state.translateY];
 }
 
 /**
@@ -271,13 +277,14 @@ export function print(text: string, x = _state.cursorX, y = _state.cursorY, col 
 
   let w = 5;
   let h = 6;
+  let lineSpacing = 1;
 
   for (let i = 0; i < text.length; i++) {
     let ch = text[i];
 
     if (ch === "\n") {
       _x = x;
-      _y += h;
+      _y += h + lineSpacing;
       continue;
     }
 
@@ -300,7 +307,7 @@ export function print(text: string, x = _state.cursorX, y = _state.cursorY, col 
   }
 
   _state.cursorX = x;
-  _state.cursorY = _y + h;
+  _state.cursorY = _y + h + lineSpacing;
 
   return _x;
 }
@@ -325,7 +332,7 @@ export function measure(text: string): [w: number, h: number] {
   }
 
   w = Math.max(w, l);
-  return [w * 5, h * 6];
+  return [w * 5, h * 7];
 }
 
 /**

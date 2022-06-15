@@ -1,4 +1,5 @@
 import { clear, init, loop, pointer, restore, save, translate } from "./engine";
+import { emitters } from "./fx";
 
 let _root: View;
 let _renderAboveQueue: Array<() => void> = [];
@@ -13,6 +14,10 @@ export function renderAbove(callback: () => void) {
 
 function _update(dt: number) {
   game.update(dt);
+
+  for (let emitter of emitters) {
+    emitter._update(dt);
+  }
 
   clear();
 
@@ -42,14 +47,6 @@ export class View {
   y: number = 0;
   w: number = 0;
   h: number = 0;
-
-  toLocal(x: number, y: number): [x: number, y: number] {
-    return [x - this.x, y - this.y];
-  }
-
-  toGlobal(x: number, y: number): [x: number, y: number] {
-    return [x + this.x, y + this.y];
-  }
 
   _render() {
     save();

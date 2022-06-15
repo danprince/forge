@@ -1,5 +1,6 @@
-import { panel, tooltip } from "./components";
-import { align, over, pointer, print, restore, save, screen, spr, translate } from "./engine";
+import { panel, scroll, TextLine as TextLine, tooltip } from "./components";
+import { align, atlas, over, pointer, print, relative, restore, save, screen, spr, SpriteId, sprr, translate } from "./engine";
+import { emitters } from "./fx";
 import { View } from "./ui";
 
 export class GameView extends View {
@@ -30,41 +31,43 @@ export class ShopView extends View {
   render() {
     panel("panel_frame_brown", -2, -2, this.w + 4, this.h + 4);
 
-    let width = Math.floor(this.w / 2);
-    let height = 12;
     save();
-    align("right");
-
-    {
-      let hover = panel("panel_grey", 0, 0, width, height);
-      spr("icon_coins", 2, 2);
-      print("32", width - 2, 3, "white", "black");
-
-      if (hover) {
-        tooltip(width, 0, ["Coins"]);
-      }
-    }
-
-    translate(width + 1, 0);
-
-    {
-      let hover = panel("panel_grey", 0, 0, width, height);
-      spr("icon_sword", 2, 2);
-      print("1", width - 2, 3, "white", "black");
-      if (hover) {
-        tooltip(width, 0, ["Swords"]);
-      }
-    }
-
+    let w = Math.floor(this.w / 2);
+    let h = 12;
+    this.currency(0, 0, w, h, "icon_coins", game.coins, ["Coins"]);
+    translate(w + 1, 0);
+    this.currency(0, 0, w, h, "icon_sword", game.swords, ["Swords"]);
     restore();
 
     this.grid.y = 13;
     this.grid._render();
   }
+
+  currency(
+    x: number,
+    y: number,
+    w: number,
+    h: number,
+    icon: SpriteId,
+    amount: number,
+    tooltipLines: TextLine[]
+  ) {
+    save();
+    translate(x, y);
+    let hover = panel("panel_grey", 0, 0, w, h);
+    spr(icon, 2, 2);
+    align("right");
+    print(amount.toString(), w - 2, 3, "white", "black");
+    restore();
+    if (hover) {
+      tooltip(x + w + 1, y, tooltipLines);
+    }
+  }
 }
 
 export class ShopGridView extends View {
-  private cellSize = 20;
+  private cellWidth = atlas["slot_frame"].w + 1;
+  private cellHeight = atlas["slot_frame"].h + 1;
 
   rows: number;
   columns: number;
@@ -73,26 +76,33 @@ export class ShopGridView extends View {
     super();
     this.rows = rows;
     this.columns = columns;
-    this.w = columns * this.cellSize;
-    this.h = rows * this.cellSize;
+    this.w = columns * this.cellWidth;
+    this.h = rows * this.cellHeight;
   }
 
   render() {
     for (let y = 0; y < this.rows; y++) {
       for (let x = 0; x < this.columns; x++) {
-        this.slot(x, y, true);
+        this.slot(x, y);
       }
     }
   }
 
   slot(x: number, y: number, disabled = false) {
-    let dw = this.cellSize;
-    let dh = this.cellSize;
+    let dw = this.cellWidth;
+    let dh = this.cellHeight;
     let dx = x * dw;
     let dy = y * dh;
     let hover = over(dx, dy, dw, dh);
     let active = hover && pointer.down;
     spr(disabled ? "slot_frame" : active ? "slot_frame_active" : hover ? "slot_frame_hover" : "slot_frame", dx, dy);
+
+    if (hover && pointer.pressed) {
+      let [px, py] = relative(pointer.x, pointer.y);
+      let gridX = px / this.cellWidth;
+      let gridY = py / this.cellHeight;
+      // TODO: Find offset within cell
+    }
   }
 }
 
@@ -119,5 +129,17 @@ export class ViewportView extends View {
     }
 
     panel("panel_frame_brown", -2, -2, this.w + 4, this.h + 4);
+
+    for (let y = 0; y < game.rows; y++) {
+      for (let x = 0; x < game.columns; x++) {
+        let object = game.getObject(x, y);
+        if (object == null) continue;
+        sprr(object.sprite.name, object.sprite.x, object.sprite.y, object.sprite.rotation);
+      }
+    }
+
+    for (let emitter of emitters) {
+      emitter.render();
+    }
   }
 }

@@ -34,6 +34,11 @@ export class GameObject {
     this.sprite = sprite;
   }
 
+  sync() {
+    this.sprite.x = this.x;
+    this.sprite.y = this.y;
+  }
+
   update(dt: number) {
 
   }
@@ -41,6 +46,8 @@ export class GameObject {
 
 export class Game {
   cells: Cell[] = [];
+  coins: number = 0;
+  swords: number = 0;
 
   constructor(readonly columns: number, readonly rows: number) {
     for (let y = 0; y < this.rows; y++) {
