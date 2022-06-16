@@ -1,22 +1,119 @@
-import { panel, scroll, TextLine as TextLine, tooltip } from "./components";
-import { align, atlas, over, pointer, print, relative, restore, save, screen, spr, SpriteId, sprr, translate } from "./engine";
-import { emitters } from "./fx";
-import { View } from "./ui";
+import { panel, scroll, TextLine } from "./components";
+import { align, atlas, over, pointer, print, resize, restore, save, screen, spr, SpriteId, sprr, translate, View } from "./engine";
 
-export class GameView extends View {
-  viewport = new ViewportView();
-  shop = new ShopView();
+export abstract class Handler {
+  start() {}
+  stop() {}
+  update(): void {};
+}
 
-  constructor() {
+export class UI extends View {
+  viewport: ViewportView;
+  shop: ShopView;
+  handlers: Handler[] = [];
+
+  constructor(width: number, height: number) {
     super();
+    resize(width, height);
+    this.w = width;
+    this.h = height;
+    this.viewport = new ViewportView();
+    this.shop = new ShopView();
     this.shop.h = this.viewport.h;
     this.shop.x = this.viewport.x - this.shop.w - 5;
     this.shop.y = this.viewport.y;
   }
 
+  private currentHandler(): Handler | undefined {
+    return this.handlers[this.handlers.length - 1];
+  }
+
+  pushHandler(handler: Handler) {
+    this.currentHandler()?.stop();
+    this.handlers.push(handler);
+    handler.start();
+  }
+
+  popHandler(handler: Handler) {
+    this.currentHandler()?.stop();
+    this.handlers.pop();
+    this.currentHandler()?.start();
+  }
+
+  update(dt: number): void {
+    this.currentHandler()?.update();
+  }
+
   render() {
     this.viewport._render();
     this.shop._render();
+  }
+
+  pointerToGridExact(): [x: number, y: number] {
+    return ui.viewport.globalToGrid(pointer.x, pointer.y);
+  }
+
+  pointerToGrid(): [x: number, y: number] {
+    let [x, y] = ui.viewport.globalToGrid(pointer.x, pointer.y);
+    return [Math.floor(x), Math.floor(y)];
+  }
+}
+
+export class ViewportView extends View {
+  tileSize = 15;
+
+  constructor() {
+    super();
+    let [w, h] = screen();
+    this.w = game.columns * this.tileSize;
+    this.h = game.rows * this.tileSize;
+    this.x = Math.floor(w / 2 - this.w / 2);
+    this.y = Math.floor(h / 2 - this.h / 2);
+  }
+
+  render() {
+    let ts = this.tileSize;
+
+    for (let y = 0; y < game.rows; y++) {
+      for (let x = 0; x < game.columns; x++) {
+        let check = x % 2 ? y % 2 : !(y % 2);
+        spr(check ? "tile_1" : "tile_2", x * ts, y * ts);
+      }
+    }
+
+    panel("panel_frame_brown", -2, -2, this.w + 4, this.h + 4);
+
+    for (let y = 0; y < game.rows; y++) {
+      for (let x = 0; x < game.columns; x++) {
+        let objects = game.getObjects(x, y);
+
+        for (let object of objects) {
+          sprr(
+            object.sprite.name,
+            object.sprite.x | 0,
+            object.sprite.y | 0,
+            object.sprite.rotation,
+          );
+        }
+      }
+    }
+  }
+
+  localToGrid(x: number, y: number): [x: number, y: number] {
+    return [x / this.tileSize, y / this.tileSize];
+  }
+
+  gridToLocal(x: number, y: number): [x: number, y: number] {
+    return [x * this.tileSize, y * this.tileSize];
+  }
+
+  globalToGrid(x: number, y: number) {
+    return this.localToGrid(x - this.x, y - this.y);
+  }
+
+  gridToGlobal(x: number, y: number) {
+    let [lx, ly] = this.gridToLocal(x, y);
+    return [lx + this.x, ly + this.y];
   }
 }
 
@@ -60,7 +157,7 @@ export class ShopView extends View {
     print(amount.toString(), w - 2, 3, "white", "black");
     restore();
     if (hover) {
-      tooltip(x + w + 1, y, tooltipLines);
+      scroll(x, y - h, tooltipLines);
     }
   }
 }
@@ -96,50 +193,5 @@ export class ShopGridView extends View {
     let hover = over(dx, dy, dw, dh);
     let active = hover && pointer.down;
     spr(disabled ? "slot_frame" : active ? "slot_frame_active" : hover ? "slot_frame_hover" : "slot_frame", dx, dy);
-
-    if (hover && pointer.pressed) {
-      let [px, py] = relative(pointer.x, pointer.y);
-      let gridX = px / this.cellWidth;
-      let gridY = py / this.cellHeight;
-      // TODO: Find offset within cell
-    }
-  }
-}
-
-export class ViewportView extends View {
-  tileSize = 15;
-
-  constructor() {
-    super();
-    let [w, h] = screen();
-    this.w = game.columns * this.tileSize;
-    this.h = game.rows * this.tileSize;
-    this.x = Math.floor(w / 2 - this.w / 2);
-    this.y = Math.floor(h / 2 - this.h / 2);
-  }
-
-  render() {
-    let ts = this.tileSize;
-
-    for (let y = 0; y < game.rows; y++) {
-      for (let x = 0; x < game.columns; x++) {
-        let check = x % 2 ? y % 2 : !(y % 2);
-        spr(check ? "tile_1" : "tile_2", x * ts, y * ts);
-      }
-    }
-
-    panel("panel_frame_brown", -2, -2, this.w + 4, this.h + 4);
-
-    for (let y = 0; y < game.rows; y++) {
-      for (let x = 0; x < game.columns; x++) {
-        let object = game.getObject(x, y);
-        if (object == null) continue;
-        sprr(object.sprite.name, object.sprite.x, object.sprite.y, object.sprite.rotation);
-      }
-    }
-
-    for (let emitter of emitters) {
-      emitter.render();
-    }
   }
 }

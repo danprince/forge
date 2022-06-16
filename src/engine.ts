@@ -1,3 +1,55 @@
+/**
+ * ---------------------- Helpers -------------------------
+ */
+
+export function random(n: number): number {
+  return Math.random() * n;
+}
+
+export function randomElement<T>(items: T[]): T {
+  return items[Math.floor(Math.random() * items.length)];
+}
+
+export function sleep(ms: number) {
+  return new Promise<void>(resolve => setTimeout(resolve, ms));
+}
+
+/**
+ * ---------------------- Window -------------------------
+ */
+
+let _width = 100;
+let _height = 100;
+
+/**
+ * Returns the current size of the canvas.
+ */
+export function screen() {
+  return [_width, _height];
+}
+
+/**
+ * Resize the canvas and rescale everything to fill browser's viewport.
+ *
+ * @param w Width in pixels
+ * @param h Height in pixels
+ */
+export function resize(w: number, h: number) {
+  let scaleX = window.innerWidth / w;
+  let scaleY = window.innerHeight / h;
+  let scale = Math.min(scaleX, scaleY);
+  _width = canvas.width = w;
+  _height = canvas.height = h;
+  canvas.style.width = `${w * scale}px`;
+  canvas.style.height = `${h * scale}px`;
+  canvas.style.imageRendering = "pixelated";
+  ctx.imageSmoothingEnabled = false;
+}
+
+/**
+ * ---------------------- Graphics -------------------------
+ */
+
 import spritesheetSrc from "./assets/spritesheet.png";
 import fontImageSrc from "./assets/font.png";
 import atlas from "./assets/spritesheet.json";
@@ -27,16 +79,6 @@ interface DrawState {
   textAlign: TextAlign;
 }
 
-interface Pointer {
-  x: number;
-  y: number;
-  down: boolean;
-  pressed: boolean;
-  released: boolean;
-}
-
-let _width = 100;
-let _height = 100;
 
 let _stack: DrawState[] = [];
 
@@ -50,23 +92,6 @@ let _state: DrawState = {
   textAlign: "left",
 };
 
-/**
- * The current state of the mouse/pointer in canvas coordinates.
- */
-export let pointer: Pointer = {
-  x: 0,
-  y: 0,
-  down: false,
-  pressed: false,
-  released: false,
-};
-
-/**
- * Returns the current size of the canvas.
- */
-export function screen() {
-  return [_width, _height];
-}
 
 /**
  * Push the current draw state onto the stack and create a new one.
@@ -89,6 +114,21 @@ export function restore() {
 }
 
 /**
+ * Set the current color.
+ */
+export function color(col: Fill) {
+  _state.color = col;
+}
+
+/**
+ * Set the text cursor position.
+ */
+export function cursor(x: number, y: number) {
+  _state.cursorX = x;
+  _state.cursorY = y;
+}
+
+/**
  * Set the text shadow color.
  */
 export function shadow(col: Fill) {
@@ -103,31 +143,16 @@ export function align(val: DrawState["textAlign"]) {
 }
 
 /**
- * Set the text cursor position.
+ * Convert local coordinates to global coordinates.
  */
-export function cursor(x: number, y: number) {
-  _state.cursorX = x;
-  _state.cursorY = y;
-}
-
-/**
- * Set the current color.
- */
-export function color(col: Fill) {
-  _state.color = col;
-}
-
-/**
- * Convert relative coordinates to absolute coordinates.
- */
-export function absolute(x: number, y: number): [x: number, y: number] {
+export function global(x: number, y: number): [x: number, y: number] {
   return [x + _state.translateX, y + _state.translateY];
 }
 
 /**
- * Convert absolute coordinates to relative coordinates.
+ * Convert global coordinates to local coordinates.
  */
-export function relative(x: number, y: number): [x: number, y: number] {
+export function local(x: number, y: number): [x: number, y: number] {
   return [x - _state.translateX, y - _state.translateY];
 }
 
@@ -187,15 +212,6 @@ export function sspr(
   dh: number,
 ) {
   ctx.drawImage(spritesheet, sx, sy, sw, sh, dx, dy, dw, dh);
-}
-
-/**
- * Check whether the pointer is currently over a given rectangle.
- */
-export function over(x: number, y: number, w: number, h: number): boolean {
-  let px = pointer.x - _state.translateX;
-  let py = pointer.y - _state.translateY;
-  return x <= px && y <= py && px < x + w && py < y + h;
 }
 
 /**
@@ -313,6 +329,10 @@ export function print(text: string, x = _state.cursorX, y = _state.cursorY, col 
 }
 
 /**
+ * ---------------------- Text -------------------------
+ */
+
+/**
  * Measure the size of a piece of text and return the required width/height.
  */
 export function measure(text: string): [w: number, h: number] {
@@ -336,21 +356,35 @@ export function measure(text: string): [w: number, h: number] {
 }
 
 /**
- * Resize the canvas and rescale everything to fill browser's viewport.
- * 
- * @param w Width in pixels
- * @param h Height in pixels
+ * ---------------------- Input -------------------------
  */
-export function resize(w: number, h: number) {
-  let scaleX = window.innerWidth / w;
-  let scaleY = window.innerHeight / h;
-  let scale = Math.min(scaleX, scaleY);
-  _width = canvas.width = w;
-  _height = canvas.height = h;
-  canvas.style.width = `${w * scale}px`;
-  canvas.style.height = `${h * scale}px`;
-  canvas.style.imageRendering = "pixelated";
-  ctx.imageSmoothingEnabled = false;
+
+interface Pointer {
+  x: number;
+  y: number;
+  down: boolean;
+  pressed: boolean;
+  released: boolean;
+}
+
+/**
+ * The current state of the mouse/pointer in canvas coordinates.
+ */
+export let pointer: Pointer = {
+  x: 0,
+  y: 0,
+  down: false,
+  pressed: false,
+  released: false,
+};
+
+/**
+ * Check whether the pointer is currently over a given rectangle.
+ */
+export function over(x: number, y: number, w: number, h: number): boolean {
+  let px = pointer.x - _state.translateX;
+  let py = pointer.y - _state.translateY;
+  return x <= px && y <= py && px < x + w && py < y + h;
 }
 
 function _pointermove(event: PointerEvent) {
@@ -376,10 +410,309 @@ function _resize(event: UIEvent) {
 }
 
 /**
+ * ---------------------- Views -------------------------
+ */
+
+let _root: View;
+let _renderAboveQueue: Array<() => void> = [];
+
+export class View {
+  x: number = 0;
+  y: number = 0;
+  w: number = 0;
+  h: number = 0;
+
+  update(dt: number) {}
+
+  _render() {
+    save();
+    translate(this.x, this.y);
+    this.render();
+    restore();
+  }
+
+  render() {}
+}
+
+/**
+ * Defer a callback until after the main rendering pass has finished.
+ * Useful for rendering stuff above everything else (e.g. tooltips).
+ */
+export function renderAbove(callback: () => void) {
+  _renderAboveQueue.push(callback);
+}
+
+/**
+ * ---------------------- Particles -------------------------
+ */
+
+interface Particle {
+  variant: number;
+  x: number;
+  y: number;
+  vx: number;
+  vy: number;
+  life: number;
+  ttl: number;
+  floor: number;
+}
+
+let _pool: Particle[] = [];
+let emitters: Emitter[] = [];
+
+function spreadRandom(n: number, spread: number): number {
+  return n + (Math.random() * spread) - (spread / 2);
+}
+
+function createParticle(): Particle {
+  if (_pool.length > 0) {
+    return _pool.pop()!;
+  } else {
+    return {
+      variant: 0,
+      x: 0,
+      y: 0,
+      vx: 0,
+      vy: 0,
+      life: 0,
+      ttl: 0,
+      floor: -Infinity,
+    };
+  }
+}
+
+export class Emitter {
+  x: number;
+  y: number;
+  w: number = 0;
+  h: number = 0;
+  active = false;
+  particles = new Set<Particle>();
+
+  private clock: number = 0;
+  private _resolve = () => {};
+
+  variants: SpriteId[][];
+  frequency: number;
+  initialSpeed: number;
+  initialSpeedSpread: number;
+  initialAngle: number;
+  initialAngleSpread: number;
+  initialLife: number;
+  initialLifeSpread: number;
+  floorLevel: number;
+  floorLevelSpread: number;
+  floorFriction: number;
+  airFriction: number;
+  bounciness: number;
+  gravity: number;
+
+  constructor(x: number, y: number, settings: Partial<Emitter> = {}) {
+    this.x = x;
+    this.y = y;
+    this.variants = [];
+    this.frequency = 1;
+    this.initialSpeed = 1;
+    this.initialSpeedSpread = 0;
+    this.initialAngle = 0;
+    this.initialAngleSpread = 0;
+    this.initialLife = 1000;
+    this.initialLifeSpread = 0;
+    this.floorLevel = -Infinity;
+    this.floorLevelSpread = 0;
+    this.floorFriction = 0;
+    this.airFriction = 0;
+    this.bounciness = 0;
+    this.gravity = 0;
+
+    Object.assign(this, settings);
+    emitters.push(this);
+  }
+
+  remove() {
+    emitters.splice(emitters.indexOf(this), 1);
+  }
+
+  start() {
+    this.active = true;
+  }
+
+  stop() {
+    this.active = false;
+    return new Promise<void>(resolve => this._resolve = resolve);
+  }
+
+  stopThenRemove() {
+    return this.stop().then(() => this.remove());
+  }
+
+  // Override to add emitter specific behaviours
+  update() {}
+
+  _update(dt: number) {
+    this.update();
+
+    let step = dt / 1000;
+
+    if (this.active) {
+      this.clock += this.frequency;
+
+      while (this.clock >= 1) {
+        this.clock -= 1;
+        this.emit();
+      }
+    }
+
+    for (let p of this.particles) {
+      p.ttl -= dt;
+
+      if (p.ttl <= 0) {
+        this.particles.delete(p);
+        _pool.push(p);
+        continue;
+      }
+
+      p.x += p.vx * step;
+      p.y += p.vy * step;
+      p.vy += this.gravity * step;
+
+      if (p.y >= p.floor && p.vy > 0) {
+        p.y = p.floor;
+        p.vx *= 1 - this.floorFriction;
+        p.vy *= -this.bounciness;
+      }
+    }
+
+    if (this.particles.size === 0) {
+      this._resolve();
+    }
+  }
+
+  emit() {
+    let angle = spreadRandom(this.initialAngle, this.initialAngleSpread);
+    let speed = spreadRandom(this.initialSpeed, this.initialSpeedSpread);
+    angle -= Math.PI / 2;
+
+    let p = createParticle();
+    p.life = p.ttl = spreadRandom(this.initialLife, this.initialLifeSpread);
+    p.x = this.x + Math.random() * this.w;
+    p.y = this.y + Math.random() * this.h;
+    p.vx = speed * Math.cos(angle);
+    p.vy = speed * Math.sin(angle);
+    p.variant = Math.floor(Math.random() * this.variants.length);
+    p.floor = p.y - spreadRandom(this.floorLevel, this.floorLevelSpread);
+    this.particles.add(p);
+  }
+
+  burst(amount: number) {
+    for (let i = 0; i < amount; i++) {
+      this.emit();
+    }
+  }
+
+  render() {
+    save();
+    for (let p of this.particles) {
+      let progress = (p.life - p.ttl) / p.life;
+      let sprites = this.variants[p.variant];
+      let step = Math.floor(progress * sprites.length);
+      let sprite = sprites[step];
+      spr(sprite, Math.round(p.x), Math.round(p.y));
+    }
+    restore();
+  }
+}
+
+/**
+ * ---------------------- Tweens -------------------------
+ */
+
+type TweenableProps<T extends Record<string, any>> = {
+  [K in keyof T as T[K] extends number ? K : never]: T[K]
+}
+
+type Easing = (t: number) => number;
+
+interface Tween {
+  duration: number;
+  elapsed: number;
+  object: any;
+  startValues: any;
+  endValues: any;
+  easing: Easing;
+  done(): void;
+}
+
+let _tweens: Tween[] = [];
+
+export let linear: Easing = t => t;
+
+export let easeInOutCirc: Easing = t => {
+  if (t < 0.5) {
+    return 0.5 * (1 - Math.sqrt(1 - 4 * (t * t)));
+  } else {
+    return 0.5 * (Math.sqrt(-((2 * t) - 3) * ((2 * t) - 1)) + 1);
+  }
+};
+
+export function tween<T extends Record<string, any>>(
+  object: T,
+  endValues: Partial<TweenableProps<T>>,
+  duration: number,
+  easing: Easing = linear,
+) {
+  type Values = typeof endValues;
+  type Key = keyof Values;
+  let startValues: Values = {};
+
+  for (let key of Object.keys(endValues) as Key[]) {
+    startValues[key] = object[key];
+  }
+
+  return new Promise<void>(resolve => {
+    _tweens.push({
+      duration,
+      elapsed: 0,
+      object,
+      startValues,
+      endValues,
+      easing,
+      done: resolve,
+    });
+  });
+}
+
+function _updateTweens(dt: number) {
+  for (let tween of _tweens) {
+    tween.elapsed += dt;
+
+    let _t = Math.min(1, tween.elapsed / tween.duration);
+    let t = tween.easing(_t);
+    let keys = Object.keys(tween.startValues);
+
+    for (let k of keys) {
+      let v0 = tween.startValues[k];
+      let v1 = tween.endValues[k];
+      tween.object[k] = v0 + (v1 - v0) * t;
+    }
+  }
+
+  _tweens = _tweens.filter(t => {
+    let done = t.elapsed >= t.duration;
+    if (done) t.done();
+    return !done;
+  });
+}
+
+/**
+ * ---------------------- Lifecycle -------------------------
+ */
+
+/**
  * Start an animation loop and call `callback` every iteration with the
  * number of milliseconds since the last call.
  */
-export function loop(callback: (dt: number) => void) {
+function _loop(callback: (dt: number) => void) {
   let lastTickTime = 0;
 
   function loop(time: number) {
@@ -391,6 +724,32 @@ export function loop(callback: (dt: number) => void) {
   }
 
   requestAnimationFrame(loop);
+}
+
+function _update(dt: number) {
+  clear();
+
+  if (_root) {
+    _root.update(dt);
+    _root._render();
+  }
+
+  let callbacks = _renderAboveQueue;
+  _renderAboveQueue = [];
+
+  for (let callback of callbacks) {
+    callback();
+  }
+
+  for (let emitter of emitters) {
+    emitter._update(dt);
+    emitter.render();
+  }
+
+  _updateTweens(dt);
+
+  // Reset frame state for pointer
+  pointer.pressed = pointer.released = false;
 }
 
 /**
@@ -406,8 +765,10 @@ function _load() {
 /**
  * Wait for assets to load and setup the DOM.
  */
-export async function init() {
+export async function init(view: View) {
   await _load();
+  _loop(_update);
+  _root = view;
   window.addEventListener("pointermove", _pointermove);
   window.addEventListener("pointerup", _pointerup);
   window.addEventListener("pointerdown", _pointerdown);

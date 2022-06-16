@@ -1,17 +1,27 @@
 import "./style.css";
-import { Game, GameObject, Sprite } from "./game";
-import { start } from "./ui";
-import { GameView } from "./views";
-import { resize } from "./engine";
+import { Game, Material } from "./game";
+import { UI } from "./views";
+import { init, resize } from "./engine";
+import { Bar, Gold, Iron, Ore, Sword } from "./crafting";
+import { SwipeAndRotateHandler } from "./handlers";
+import { Anvil, Furnace, Goblin, Mule, Warrior } from "./objects";
+import "./crafting";
 
-window.game = new Game(10, 10);
+declare global {
+  const game: Game;
+  const ui: UI;
+}
 
-let go = new GameObject(
-  new Sprite("goblin")
-);
-game.addObject(0, 0, go);
+(window as any).game = new Game(10, 10);
+(window as any).ui = new UI(300, 300);
 
-resize(300, 300);
-start(new GameView);
+game.addRecipe(Sword);
 
+game.addObject(new Material(Iron, Ore, "ore_iron"), 2, 5);
+game.addObject(new Furnace(), 5, 5);
+game.addObject(new Anvil(), 8, 5);
+game.addObject(new Goblin(), 2, 2);
+game.addObject(new Warrior(), 2, 0);
 
+ui.pushHandler(new SwipeAndRotateHandler);
+init(ui);

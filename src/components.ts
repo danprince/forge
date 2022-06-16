@@ -1,5 +1,4 @@
-import { relative, align, atlas, color, cursor, Fill, measure, over, pointer, print, rect, rectfill, restore, save, shadow, SpriteId, sspr, absolute } from "./engine";
-import { renderAbove } from "./ui";
+import { local, align, atlas, color, cursor, Fill, measure, over, pointer, print, rect, rectfill, restore, save, shadow, SpriteId, sspr, global, renderAbove } from "./engine";
 
 /**
  * Draws a panel from a 9-slice sprite, where each slice is 3x3.
@@ -72,7 +71,7 @@ export function tooltip(x: number, y: number, lines: TextLine[]) {
   let [w, h] = measureLines(lines);
   h += padding * 1;
   w += padding * 1;
-  [x, y] = absolute(x, y);
+  [x, y] = global(x, y);
 
   renderAbove(() => {
     save();
@@ -94,9 +93,9 @@ export function scroll(x: number, y: number, lines: TextLine[]) {
   let px = 3;
   let py = 2;
   let [w, h] = measureLines(lines);
-  h += px * 2;
+  h += px * 2 - 2;
   w += py * 2;
-  [x, y] = absolute(x, y);
+  [x, y] = global(x, y);
 
   renderAbove(() => {
     save();
