@@ -1,5 +1,5 @@
 import { createCoinEmitter } from "./fx";
-import { Component, Element, One, Recipe, SetBonus, Symmetry, Variant, ZeroOrMore } from "./game";
+import { Component, Element, Material, One, Recipe, SetBonus, Symmetry, Variant, ZeroOrMore } from "./game";
 
 // Elements                   Name     Rarity
 export let Iron = new Element("Iron",  3);
@@ -79,7 +79,54 @@ export let Sword = new Recipe([
   let dw = dx1 - dx0;
   let dh = dy1 - dy0;
 
+  let score = getSwordScore(materials);
+  let coins = calculateReward(score);
+
+  game.swords += 1;
+  game.coins = coins;
+
   let fx = createCoinEmitter(dx0, dy0, dw, dh);
-  fx.burst(30);
+  fx.burst(coins);
   fx.stop().then(() => fx.remove());
 });
+
+export type ScoreItem = [
+  name: string,
+  modifier: "+" | "*",
+  value: number,
+];
+
+export function getSwordScore(parts: Material[]): ScoreItem[] {
+  let items: ScoreItem[] = [];
+  let tip = parts.find(part => part.component === SwordTip)!;
+  let handle = parts.find(part => part.component === SwordHandle)!;
+  let blade = parts.filter(part => part.component === SwordBlade);
+
+  let baseValuePerPart = 5;
+  let fullSetMultiplier = 1;
+
+  let size = parts.length;
+  items.push([`Size ${size} sword`, "+", size * baseValuePerPart]);
+
+  if (size >= 5) {
+    items.push(["Really bloody long", "+", 50]);
+  }
+
+  if (size > 2 && tip.set && blade.every(part => part.set === tip.set)) {
+    items.push([`Set: ${tip.set.name}`, "*", fullSetMultiplier]);
+  }
+
+  return items;
+}
+
+export function calculateReward(items: ScoreItem[]) {
+  let base = 0;
+  let multiplier = 0;
+
+  for (let [, op, value] of items) {
+    if (op === "+") base += value
+    if (op === "*") multiplier += value
+  }
+
+  return Math.floor(base + base * multiplier);
+}
