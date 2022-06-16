@@ -99,7 +99,6 @@ export type ScoreItem = [
 export function getSwordScore(parts: Material[]): ScoreItem[] {
   let items: ScoreItem[] = [];
   let tip = parts.find(part => part.component === SwordTip)!;
-  let handle = parts.find(part => part.component === SwordHandle)!;
   let blade = parts.filter(part => part.component === SwordBlade);
 
   let baseValuePerPart = 5;

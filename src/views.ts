@@ -1,4 +1,4 @@
-import { panel, scroll, TextLine, tooltip } from "./components";
+import { panel, scroll, TextLine } from "./components";
 import { align, atlas, local, opacity, over, pointer, print, resize, restore, save, screen, spr, SpriteId, sprr, translate, View } from "./engine";
 import { GameObject, ShopItem } from "./game";
 

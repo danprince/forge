@@ -32,7 +32,7 @@ export class SwipeAndRotateHandler extends Handler {
     }
 
     else if (pointer.released && this.action) {
-      let { time, origin, object } = this.action;
+      let { origin, object } = this.action;
 
       // Reset current action
       this.action = undefined;
