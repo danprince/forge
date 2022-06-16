@@ -1,5 +1,6 @@
 import { panel, scroll, TextLine } from "./components";
-import { align, atlas, over, pointer, print, resize, restore, save, screen, spr, SpriteId, sprr, translate, View } from "./engine";
+import { align, atlas, local, opacity, over, pointer, print, resize, restore, save, screen, spr, SpriteId, sprr, translate, View } from "./engine";
+import { GameObject, ShopItem } from "./game";
 
 export abstract class Handler {
   start() {}
@@ -118,12 +119,46 @@ export class ViewportView extends View {
   }
 }
 
+// TODO: The shop shouldn't really be responsible for this. Once
+// we're into placement then we should be overriding the default
+// handler and rendering from somewhere else.
+
+export interface Placement {
+  object: GameObject;
+  offsetX: number;
+  offsetY: number;
+  canPlace(x: number, y: number): boolean;
+  onPlaced(): void;
+  onCanceled(): void;
+}
+
 export class ShopView extends View {
   grid = new ShopGridView(3, 5);
+  placement: Placement | undefined;
 
   constructor() {
     super();
     this.w = this.grid.w - 1;
+
+    this.grid.onPickupItem = (item, offsetX, offsetY) => {
+      if (this.placement != null) return;
+      if (!game.shop.canAfford(item)) return;
+
+      this.placement = {
+        object: item.create(),
+        offsetX,
+        offsetY,
+        canPlace() {
+          return game.shop.canAfford(item);
+        },
+        onPlaced() {
+          game.shop.buy(item);
+        },
+        onCanceled() {
+
+        },
+      };
+    };
   }
 
   render() {
@@ -139,6 +174,42 @@ export class ShopView extends View {
 
     this.grid.y = 13;
     this.grid._render();
+    this.renderPlacement();
+  }
+
+  renderPlacement() {
+    if (!this.placement) return;
+    let { object, offsetX, offsetY } = this.placement;
+
+    let [gridX, gridY] = ui.pointerToGrid();
+    let [x, y] = local(pointer.x - offsetX, pointer.y - offsetY);
+
+    if (pointer.released) {
+      console.log("released")
+      let cell = game.getCell(gridX, gridY);
+
+      if (cell?.isEmpty() && this.placement.canPlace(gridX, gridY)) {
+        game.addObject(object, gridX, gridY);
+        this.placement.onPlaced();
+      } else {
+        this.placement.onCanceled();
+      }
+
+      this.placement = undefined;
+      return;
+    }
+
+    if (game.inBounds(gridX, gridY)) {
+      // Snap to grid
+      let [globalX, globalY] = ui.viewport.gridToGlobal(gridX, gridY);
+      let [localX, localY] = local(globalX, globalY);
+      save();
+      opacity(0.5);
+      spr(this.placement.object.sprite.name, localX, localY);
+      restore();
+    } else {
+      spr(this.placement.object.sprite.name, x, y);
+    }
   }
 
   currency(
@@ -178,21 +249,46 @@ export class ShopGridView extends View {
     this.h = rows * this.cellHeight;
   }
 
+  // Parent view should swap this out.
+  onPickupItem(
+    item: ShopItem,
+    offsetX: number,
+    offsetY: number,
+  ) {}
+
   render() {
     for (let y = 0; y < this.rows; y++) {
       for (let x = 0; x < this.columns; x++) {
-        this.slot(x, y);
+        let i = x + y * this.columns;
+        let item = game.shop.items[i];
+
+        if (item) {
+          this.slot(x, y, item);
+        }
       }
     }
   }
 
-  slot(x: number, y: number, disabled = false) {
+  slot(x: number, y: number, item: ShopItem) {
+    let pad = 2;
     let dw = this.cellWidth;
     let dh = this.cellHeight;
     let dx = x * dw;
     let dy = y * dh;
     let hover = over(dx, dy, dw, dh);
     let active = hover && pointer.down;
+    let disabled = !game.shop.canAfford(item);
+    let localSpriteX = dx + pad;
+    let localSpriteY = dy + pad;
+
     spr(disabled ? "slot_frame" : active ? "slot_frame_active" : hover ? "slot_frame_hover" : "slot_frame", dx, dy);
+    spr(item.sprite, localSpriteX, localSpriteY);
+
+    if (hover && pointer.pressed) {
+      let [localPointerX, localPointerY] = local(pointer.x, pointer.y);
+      let offsetX = localPointerX - localSpriteX;
+      let offsetY = localPointerY - localSpriteY;
+      this.onPickupItem(item, offsetX, offsetY);
+    }
   }
 }

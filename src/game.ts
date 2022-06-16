@@ -13,6 +13,15 @@ export function directionToVector(direction: Direction): [x: number, y: number] 
   return vectorsByDirection[direction];
 }
 
+export function directionToRotation(direction: Direction): number {
+  switch (direction) {
+    case "north": return 0;
+    case "east": return 1;
+    case "south": return 2;
+    case "west": return 3;
+  }
+}
+
 export function directionToRadians(direction: Direction): number {
   switch (direction) {
     case "north": return 0;
@@ -392,12 +401,55 @@ export abstract class Action {
   update(dt: number) {}
 }
 
+export interface Cost {
+  coins: number;
+  swords: number;
+}
+
+export interface ShopItem {
+  sprite: SpriteId;
+  cost: Cost;
+  create(): GameObject;
+}
+
+export class Shop {
+  items: ShopItem[] = [];
+
+  /**
+   * Shorthand for addItem that tabulates better when adding lots of items.
+   */
+  add(sprite: SpriteId, coins: number, swords: number, create: () => GameObject) {
+    this.addItem({
+      sprite,
+      cost: { coins, swords },
+      create,
+    });
+  }
+
+  addItem(item: ShopItem) {
+    this.items.push(item);
+  }
+
+  canAfford(item: ShopItem) {
+    return (
+      game.coins >= item.cost.coins &&
+      game.swords >= item.cost.swords
+    );
+  }
+
+  buy(item: ShopItem) {
+    game.coins -= item.cost.coins;
+    game.swords -= item.cost.swords;
+  }
+}
+
 export class Game {
   cells: Cell[] = [];
   coins: number = 0;
   swords: number = 0;
   recipes: Recipe[] = [];
   actions: Action[] = [];
+  shop = new Shop();
 
   constructor(readonly columns: number, readonly rows: number) {
     for (let y = 0; y < this.rows; y++) {

@@ -26,5 +26,11 @@ game.addObject(new Anvil(), 8, 5);
 game.addObject(new Goblin(), 2, 2);
 game.addObject(new Warrior(), 2, 0);
 
+//            Sprite           Coins  Swords   Create
+game.shop.add("pack_mule",     50,     0,      () => new Mule());
+game.shop.add("furnace",       20,     0,      () => new Furnace());
+game.shop.add("anvil",         20,     0,      () => new Anvil());
+game.shop.add("warrior",       10,     1,      () => new Warrior());
+
 ui.pushHandler(new SwipeAndRotateHandler);
 init(ui);

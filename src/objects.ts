@@ -2,7 +2,7 @@ import { Slide } from "./actions";
 import { Bar, Ore, SwordBlade, SwordHandle, SwordTip } from "./crafting";
 import { sleep } from "./engine";
 import { createBloodEmitter, createCoinEmitter, createSmokeEmitter, createSparkEmitter } from "./fx";
-import { Direction, GameObject, Material, Sprite } from "./game";
+import { Direction, directionToRotation, GameObject, Material, Sprite } from "./game";
 
 export class Furnace extends GameObject<Material> {
   constructor() {
@@ -31,6 +31,10 @@ export class Furnace extends GameObject<Material> {
     });
 
     if (bar) {
+      if (bar.canBeRotated()) {
+        bar.rotation = directionToRotation(direction);
+      }
+
       game.addObject(bar, this.x, this.y);
       game.addAction(new Slide(bar, direction));
     }
@@ -74,6 +78,10 @@ export class Anvil extends GameObject<Material> {
     });
 
     if (output) {
+      if (output.canBeRotated()) {
+        output.rotation = directionToRotation(direction);
+      }
+
       game.addObject(output, this.x, this.y);
       game.addAction(new Slide(output, direction));
     }
