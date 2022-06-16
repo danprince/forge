@@ -16,14 +16,10 @@ export function sleep(ms: number) {
 
 export function shuffled<T>(array: T[]): T[] {
   array = [...array];
-  let n = array.length;
 
-  for (let i = 0; i < n - 2; i++) {
-    let j = i + Math.floor(Math.random() * n - i);
-    let a = array[i];
-    let b = array[j];
-    array[i] = b;
-    array[j] = a;
+  for (let i = array.length - 1; i > 0; i--) {
+    let n = Math.floor(Math.random() * i + 1);
+    [array[n], array[i]] = [array[i], array[n]];
   }
 
   return array;
