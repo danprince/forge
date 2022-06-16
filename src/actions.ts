@@ -1,6 +1,7 @@
 import { Ore } from "./crafting";
 import { tween } from "./engine";
 import { Action, Direction, directionToVector, GameObject, Material } from "./game";
+import { Goblin } from "./objects";
 
 export class Rotate extends Action {
   constructor(readonly object: GameObject) {
@@ -62,6 +63,7 @@ export class Slide extends Action {
 export class SpawnOre extends Action {
   private speed = 10_000;
   private elapsed = 0;
+  goblinChance = 0.1;
 
   // We'll control calling "run" ourselves for this action.
   start() {}
@@ -75,11 +77,15 @@ export class SpawnOre extends Action {
   }
 
   async run() {
-    let ore = Material.createByRarity({ component: [Ore] });
+    let object: GameObject | undefined = Material.createByRarity({ component: [Ore] });
     let cells = this.getPotentialCells();
     let cell = cells[Math.floor(Math.random() * cells.length)];
 
-    if (ore && cell) {
+    if (Math.random() <= this.goblinChance) {
+      object = new Goblin();
+    }
+
+    if (object && cell) {
       let direction: Direction =
         cell.x === 0 ? "east" :
         cell.y === 0 ? "south" :
@@ -87,8 +93,8 @@ export class SpawnOre extends Action {
         cell.y > 0 ? "north" :
         "north";
 
-      game.addObject(ore, cell.x, cell.y);
-      game.addAction(new Slide(ore, direction));
+      game.addObject(object, cell.x, cell.y);
+      game.addAction(new Slide(object, direction));
     }
   }
 
