@@ -27,19 +27,19 @@ game.shop.add("warrior",       10,     1,      () => new Warrior());
 
 let cells = shuffled(game.cells);
 
-{
-  let cell = cells.pop()!;
-  game.addObject(new Furnace(), cell.x, cell.y);
+for (let i = 0; i < 2; i++) {
+  let cell = cells.pop();
+  if (cell) game.addObject(new Furnace(), cell.x, cell.y);
 }
 
-{
-  let cell = cells.pop()!;
-  game.addObject(new Anvil(), cell.x, cell.y);
+for (let i = 0; i < 2; i++) {
+  let cell = cells.pop();
+  if (cell) game.addObject(new Anvil(), cell.x, cell.y);
 }
 
-{
-  let cell = cells.pop()!;
-  game.addObject(new Mule(), cell.x, cell.y);
+for (let i = 0; i < 1; i++) {
+  let cell = cells.pop();
+  if (cell) game.addObject(new Mule(), cell.x, cell.y);
 }
 
 for (let i = 0; i < 4; i++) {
