@@ -14,6 +14,21 @@ export function sleep(ms: number) {
   return new Promise<void>(resolve => setTimeout(resolve, ms));
 }
 
+export function shuffled<T>(array: T[]): T[] {
+  array = [...array];
+  let n = array.length;
+
+  for (let i = 0; i < n - 2; i++) {
+    let j = i + Math.floor(Math.random() * n - i);
+    let a = array[i];
+    let b = array[j];
+    array[i] = b;
+    array[j] = a;
+  }
+
+  return array;
+}
+
 /**
  * ---------------------- Window -------------------------
  */

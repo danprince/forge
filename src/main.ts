@@ -1,10 +1,10 @@
 import "./style.css";
 import { Game, Material } from "./game";
 import { UI } from "./views";
-import { init, resize } from "./engine";
-import { Bar, Gold, Iron, Ore, Sword } from "./crafting";
+import { init, shuffled } from "./engine";
+import { Ore, Sword } from "./crafting";
 import { SwipeAndRotateHandler } from "./handlers";
-import { Anvil, Furnace, Goblin, Mule, Warrior } from "./objects";
+import { Anvil, Bucket, Furnace, Mule, Warrior } from "./objects";
 import "./crafting";
 import { SpawnOre } from "./actions";
 
@@ -19,18 +19,39 @@ declare global {
 game.addRecipe(Sword);
 game.addAction(new SpawnOre());
 
-game.addObject(new Material(Iron, Ore, "ore_iron"), 2, 5);
-game.addObject(new Furnace(), 5, 5);
-game.addObject(new Mule(), 1, 1);
-game.addObject(new Anvil(), 8, 5);
-game.addObject(new Goblin(), 2, 2);
-game.addObject(new Warrior(), 2, 0);
-
 //            Sprite           Coins  Swords   Create
 game.shop.add("pack_mule",     50,     0,      () => new Mule());
 game.shop.add("furnace",       20,     0,      () => new Furnace());
 game.shop.add("anvil",         20,     0,      () => new Anvil());
 game.shop.add("warrior",       10,     1,      () => new Warrior());
+
+let cells = shuffled(game.cells);
+
+{
+  let cell = cells.pop()!;
+  game.addObject(new Furnace(), cell.x, cell.y);
+}
+
+{
+  let cell = cells.pop()!;
+  game.addObject(new Anvil(), cell.x, cell.y);
+}
+
+{
+  let cell = cells.pop()!;
+  game.addObject(new Mule(), cell.x, cell.y);
+}
+
+for (let i = 0; i < 4; i++) {
+  let cell = cells.pop();
+  if (cell) game.addObject(new Bucket(), cell.x, cell.y);
+}
+
+for (let i = 0; i < 20; i++) {
+  let cell = cells.pop();
+  let ore = Material.createByRarity({ component: Ore });
+  if (cell && ore) game.addObject(ore, cell.x, cell.y);
+}
 
 ui.pushHandler(new SwipeAndRotateHandler);
 init(ui);
