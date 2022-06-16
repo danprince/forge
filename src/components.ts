@@ -66,7 +66,10 @@ export function measureLines(lines: TextLine[]): [w: number, h: number] {
   return [width, height];
 }
 
-export function tooltip(x: number, y: number, lines: TextLine[]) {
+type MaybeTextLine = TextLine | false | undefined | null;
+
+export function tooltip(x: number, y: number, maybeLines: MaybeTextLine[]) {
+  let lines = maybeLines.filter(line => line) as TextLine[];
   let padding = 2;
   let [w, h] = measureLines(lines);
   h += padding * 1;
@@ -89,7 +92,8 @@ export function tooltip(x: number, y: number, lines: TextLine[]) {
   });
 }
 
-export function scroll(x: number, y: number, lines: TextLine[]) {
+export function scroll(x: number, y: number, maybeLines: MaybeTextLine[]) {
+  let lines = maybeLines.filter(line => line) as TextLine[];
   let px = 3;
   let py = 2;
   let [w, h] = measureLines(lines);

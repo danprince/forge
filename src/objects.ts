@@ -4,7 +4,10 @@ import { sleep } from "./engine";
 import { createBloodEmitter, createCoinEmitter, createSmokeEmitter, createSparkEmitter } from "./fx";
 import { Direction, directionToRotation, GameObject, Material, Sprite } from "./game";
 
-export class Furnace extends GameObject<Material> {
+export class Furnace extends GameObject {
+  name = "Furnace";
+  description = "Turns ores into bars";
+
   constructor() {
     super(new Sprite("furnace"));
   }
@@ -51,7 +54,10 @@ export class Furnace extends GameObject<Material> {
   }
 }
 
-export class Anvil extends GameObject<Material> {
+export class Anvil extends GameObject {
+  name = "Anvil";
+  description = "Turns bars into parts";
+
   constructor() {
     super(new Sprite("anvil"));
   }
@@ -99,7 +105,10 @@ export class Anvil extends GameObject<Material> {
   }
 }
 
-export class Mule extends GameObject<Material> {
+export class Mule extends GameObject {
+  name = "Mule";
+  description = "Sells items at trade price";
+
   constructor() {
     super(new Sprite("pack_mule"));
   }
@@ -128,7 +137,10 @@ export class Mule extends GameObject<Material> {
   }
 }
 
-export class Goblin extends GameObject<Material> {
+export class Goblin extends GameObject {
+  name = "Goblin";
+  description = "Steals items";
+
   constructor() {
     super(new Sprite("goblin"));
   }
@@ -156,7 +168,10 @@ export class Goblin extends GameObject<Material> {
   }
 }
 
-export class Warrior extends GameObject<Material> {
+export class Warrior extends GameObject {
+  name = "Warrior";
+  description = "Kills goblins";
+
   constructor() {
     super(new Sprite("warrior"));
   }
@@ -176,3 +191,14 @@ export class Warrior extends GameObject<Material> {
   }
 }
 
+export class Bucket extends GameObject {
+  name = "Bucket";
+
+  constructor() {
+    super(new Sprite("bucket"));
+  }
+
+  canBeMoved(): boolean {
+    return true;
+  }
+}

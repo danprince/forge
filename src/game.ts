@@ -65,11 +65,13 @@ export class Sprite {
   }
 }
 
-export class GameObject<Accept extends GameObject<any> = GameObject<any>> {
+export class GameObject {
   sprite: Sprite;
   x: number = 0;
   y: number = 0;
   rotation: number = 0;
+  name: string = "";
+  description: string = "";
 
   constructor(sprite: Sprite) {
     this.sprite = sprite;
@@ -100,11 +102,11 @@ export class GameObject<Accept extends GameObject<any> = GameObject<any>> {
     this.sprite.rotation = (this.rotation % 4) / 4 * (Math.PI * 2);
   }
 
-  canAccept(object: GameObject, direction: Direction): object is Accept {
+  canAccept(object: GameObject, direction: Direction): object is GameObject {
     return false;
   }
 
-  onAccept(object: Accept, direction: Direction) {}
+  onAccept(object: GameObject, direction: Direction) {}
   onBump(object: GameObject, direction: Direction) {}
 
   update(dt: number) {}
@@ -202,6 +204,12 @@ export class Material extends GameObject {
     readonly set?: SetBonus,
   ) {
     super(new Sprite(spriteId));
+
+    if (this.set) {
+      this.name = `${this.set.name} ${this.component.name}`;
+    } else {
+      this.name =  `${this.element.name} ${this.component.name}`;
+    }
   }
 
   static createByRarity(query: Query = {}): Material | undefined {
@@ -224,14 +232,6 @@ export class Material extends GameObject {
 
   canBeRotated(): boolean {
     return this.component.rotates;
-  }
-
-  name() {
-    if (this.set) {
-      return `${this.set.name} ${this.component.name}`;
-    } else {
-      return `${this.element.name} ${this.component.name}`;
-    }
   }
 }
 
@@ -410,6 +410,7 @@ export interface ShopItem {
   sprite: SpriteId;
   cost: Cost;
   create(): GameObject;
+  _reference: GameObject;
 }
 
 export class Shop {
@@ -423,6 +424,7 @@ export class Shop {
       sprite,
       cost: { coins, swords },
       create,
+      _reference: create(),
     });
   }
 

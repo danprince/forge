@@ -1,4 +1,4 @@
-import { panel, scroll, TextLine } from "./components";
+import { panel, scroll, TextLine, tooltip } from "./components";
 import { align, atlas, local, opacity, over, pointer, print, resize, restore, save, screen, spr, SpriteId, sprr, translate, View } from "./engine";
 import { GameObject, ShopItem } from "./game";
 
@@ -99,6 +99,20 @@ export class ViewportView extends View {
         }
       }
     }
+
+    let [px, py] = ui.pointerToGrid();
+    let object = game.getObject(px, py);
+
+    if (object) {
+      let msg = [
+        `${object.name}:`,
+        object.description,
+        object.canBeRotated() && `\x03 to \x01`,
+        object.canBeMoved() && `\x04 to \x02`,
+      ].filter(x => x).join(" ");
+
+      print(msg, 0, this.h + 3, "#7b685c");
+    }
   }
 
   localToGrid(x: number, y: number): [x: number, y: number] {
@@ -185,7 +199,6 @@ export class ShopView extends View {
     let [x, y] = local(pointer.x - offsetX, pointer.y - offsetY);
 
     if (pointer.released) {
-      console.log("released")
       let cell = game.getCell(gridX, gridY);
 
       if (cell?.isEmpty() && this.placement.canPlace(gridX, gridY)) {
@@ -281,8 +294,23 @@ export class ShopGridView extends View {
     let localSpriteX = dx + pad;
     let localSpriteY = dy + pad;
 
+    save();
     spr(disabled ? "slot_frame" : active ? "slot_frame_active" : hover ? "slot_frame_hover" : "slot_frame", dx, dy);
+    if (disabled) opacity(0.5);
     spr(item.sprite, localSpriteX, localSpriteY);
+    restore();
+
+    if (hover) {
+      let costs: string[] = [];
+      if (item.cost.coins) costs.push(`${item.cost.coins} coins`);
+      if (item.cost.swords) costs.push(`${item.cost.swords} swords`);
+
+      scroll(dx + dw, dy, [
+        [disabled ? "red" : "white", item._reference.name],
+        item._reference.description,
+        [disabled ? "red" : "#ff9e19", costs.join(" + ")],
+      ]);
+    }
 
     if (hover && pointer.pressed) {
       let [localPointerX, localPointerY] = local(pointer.x, pointer.y);
