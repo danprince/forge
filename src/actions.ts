@@ -1,68 +1,105 @@
+import { Ore } from "./crafting";
 import { tween } from "./engine";
-import { createSparkEmitter } from "./fx";
-import { Direction, directionToRadians, directionToVector, GameObject } from "./game";
+import { Action, Direction, directionToVector, GameObject, Material } from "./game";
 
-export async function rotate(object: GameObject) {
-  object.rotation += 1;
-  let angle = object.rotation / 4 * Math.PI * 2;
-  await tween(object.sprite, { rotation: angle }, 100);
-  game.craftingCheck();
+export class Rotate extends Action {
+  constructor(readonly object: GameObject) {
+    super();
+  }
+
+  async run() {
+    this.object.rotation += 1;
+    let angle = this.object.rotation / 4 * Math.PI * 2;
+    await tween(this.object.sprite, { rotation: angle }, 100);
+  }
 }
 
-export async function swipe(object: GameObject, direction: Direction) {
-  let [dstX, dstY] = game.findPath(object, direction);
+export class Slide extends Action {
+  constructor(readonly object: GameObject, readonly direction: Direction) {
+    super();
+  }
 
-  // Convert the current visual position of the object back into grid
-  // coordinates.
-  let [srcX, srcY] = ui.viewport.localToGrid(object.sprite.x, object.sprite.y);
+  async run() {
+    let { object, direction } = this;
 
-  // Calculate duration from speed in tiles per second
-  let speed = 30;
-  let distance = Math.hypot(srcX - dstX, srcY - dstY);
-  let duration = distance / speed * 1000;
+    let [dstX, dstY] = game.findPath(object, direction);
+    let [srcX, srcY] = ui.viewport.localToGrid(object.sprite.x, object.sprite.y);
 
-  // Calculate the final position for the sprite (local coordinate space)
-  let [lx1, ly1] = ui.viewport.gridToLocal(dstX, dstY);
+    // Calculate duration from speed in tiles per second
+    let speed = 30;
+    let distance = Math.hypot(srcX - dstX, srcY - dstY);
+    let duration = distance / speed * 1000;
 
-  // Calculate the start and end coordinates for the emitter (global space)
-  let [ex0, ey0] = ui.viewport.gridToGlobal(srcX + 0.5, srcY + 0.5);
-  let [ex1, ey1] = ui.viewport.gridToGlobal(dstX + 0.5, dstY + 0.5);
+    // Calculate the final position for the sprite (local coordinate space)
+    let [lx1, ly1] = ui.viewport.gridToLocal(dstX, dstY);
 
-  // Move the object behind the scenes
-  game.moveObject(object, dstX, dstY);
+    // Move the object behind the scenes
+    game.moveObject(object, dstX, dstY);
 
-  // Then do all the fancy stuff to get it moved to the destination
-  let emitter = createSparkEmitter(ex0, ey0);
-  emitter.initialAngle = directionToRadians(direction);
-  emitter.gravity = 0;
-  emitter.frequency = 1;
-  //emitter.start();
+    // Tween the sprite to the destination
+    await tween(object.sprite, { x: lx1, y: ly1 }, duration);
 
-  await Promise.all([
-    tween(emitter, { x: ex1, y: ey1 }, duration),
-    tween(object.sprite, { x: lx1, y: ly1 }, duration),
-  ]);
+    // Check whether we'll be accepted by any objects at the destination
+    let targets = game.getObjects(dstX, dstY);
 
-  emitter.stopThenRemove();
+    for (let target of targets) {
+      if (target.canAccept(object, direction)) {
+        target.onAccept(object, direction);
+        break;
+      }
+    }
 
-  // Check whether we'll be accepted by any objects at the destination
-  let targets = game.getObjects(dstX, dstY);
+    // Check whether we'll bump any objects
+    let [dx, dy] = directionToVector(direction);
+    let bumpTargets = game.getObjects(dstX + dx, dstY + dy);
 
-  for (let target of targets) {
-    if (target.canAccept(object, direction)) {
-      target.onAccept(object, direction);
-      break;
+    for (let target of bumpTargets) {
+      object.onBump(target, direction);
+    }
+  }
+}
+
+export class SpawnOre extends Action {
+  private speed = 10_000;
+  private elapsed = 0;
+
+  // We'll control calling "run" ourselves for this action.
+  start() {}
+
+  update(dt: number) {
+    this.elapsed += dt;
+    if (this.elapsed >= this.speed) {
+      this.elapsed = 0;
+      this.run();
     }
   }
 
-  // Check whether we'll bump any objects
-  let [dx, dy] = directionToVector(direction);
-  let bumpTargets = game.getObjects(dstX + dx, dstY + dy);
+  async run() {
+    let ore = Material.createByRarity({ component: [Ore] });
+    let cells = this.getPotentialCells();
+    let cell = cells[Math.floor(Math.random() * cells.length)];
 
-  for (let target of bumpTargets) {
-    object.onBump(target, direction);
+    if (ore && cell) {
+      let direction: Direction =
+        cell.x === 0 ? "east" :
+        cell.y === 0 ? "south" :
+        cell.x > 0 ? "west" :
+        cell.y > 0 ? "north" :
+        "north";
+
+      game.addObject(ore, cell.x, cell.y);
+      game.addAction(new Slide(ore, direction));
+    }
   }
 
-  // And finally do a crafting check
-  game.craftingCheck();
+  getPotentialCells() {
+    return game.cells.filter(cell => {
+      return cell.objects.length === 0 && (
+        cell.x === 0 ||
+        cell.y === 0 ||
+        cell.x === game.columns - 1 ||
+        cell.y === game.rows - 1
+      );
+    });
+  }
 }

@@ -42,6 +42,7 @@ export class UI extends View {
 
   update(dt: number): void {
     this.currentHandler()?.update();
+    game.update(dt);
   }
 
   render() {

@@ -1,4 +1,4 @@
-import { rotate, swipe } from "./actions";
+import { Rotate, Slide } from "./actions";
 import { pointer } from "./engine";
 import { Direction, GameObject } from "./game";
 import { Handler } from "./views";
@@ -42,7 +42,7 @@ export class SwipeAndRotateHandler extends Handler {
       let isMouseOverObject = gx === object.x && gy === object.y;
 
       if (canRotate && !canMove && isMouseOverObject) {
-        return rotate(object);
+        return game.addAction(new Rotate(object));
       }
 
       let deltaX = x - origin.x;
@@ -54,11 +54,11 @@ export class SwipeAndRotateHandler extends Handler {
         : deltaY < 0 ? "north" : "south";
 
       if (canMove && distance > threshold) {
-        return swipe(object, direction);
+        return game.addAction(new Slide(object, direction));
       }
 
       if (canRotate && isMouseOverObject) {
-        return rotate(object);
+        return game.addAction(new Rotate(object));
       }
 
       // We can't do anything, so just sync the object back

@@ -1,18 +1,24 @@
-import { swipe } from "./actions";
+import { Slide } from "./actions";
 import { Bar, Ore, SwordBlade, SwordHandle, SwordTip } from "./crafting";
 import { sleep } from "./engine";
-import { createBloodEmitter, createSmokeEmitter, createSparkEmitter } from "./fx";
-import { Direction, Game, GameObject, Material, Sprite } from "./game";
+import { createBloodEmitter, createCoinEmitter, createSmokeEmitter, createSparkEmitter } from "./fx";
+import { Direction, GameObject, Material, Sprite } from "./game";
 
 export class Furnace extends GameObject<Material> {
   constructor() {
     super(new Sprite("furnace"));
   }
 
-  canAccept(object: GameObject): object is Material {
+  isOutputClear(direction: Direction): boolean {
+    let cell = game.getCellInDirection(this.x, this.y, direction);
+    return cell != null && cell.isEmpty();
+  }
+
+  canAccept(object: GameObject, direction: Direction): object is Material {
     return (
       object instanceof Material &&
-      object.component === Ore
+      object.component === Ore &&
+      this.isOutputClear(direction)
     );
   }
 
@@ -26,7 +32,7 @@ export class Furnace extends GameObject<Material> {
 
     if (bar) {
       game.addObject(bar, this.x, this.y);
-      swipe(bar, direction);
+      game.addAction(new Slide(bar, direction));
     }
 
     this.emitSmoke();
@@ -46,10 +52,16 @@ export class Anvil extends GameObject<Material> {
     super(new Sprite("anvil"));
   }
 
-  canAccept(object: GameObject): object is Material {
+  isOutputClear(direction: Direction): boolean {
+    let cell = game.getCellInDirection(this.x, this.y, direction);
+    return cell != null && cell.isEmpty();
+  }
+
+  canAccept(object: GameObject, direction: Direction): object is Material {
     return (
       object instanceof Material &&
-      object.component === Bar
+      object.component === Bar &&
+      this.isOutputClear(direction)
     );
   }
 
@@ -63,7 +75,7 @@ export class Anvil extends GameObject<Material> {
 
     if (output) {
       game.addObject(output, this.x, this.y);
-      swipe(output, direction);
+      game.addAction(new Slide(output, direction));
     }
 
     this.emitSparks();
@@ -95,7 +107,16 @@ export class Mule extends GameObject<Material> {
   onAccept(object: Material): void {
     game.removeObject(object);
     // TODO: Use better calculation
-    game.coins += 5;
+    let coins = 5;
+    game.coins += coins;
+    this.flashOfGold(coins);
+  }
+
+  private flashOfGold(coins: number) {
+    let [ex, ey] = ui.viewport.gridToGlobal(this.x + 0.5, this.y + 0.5);
+    let fx = createCoinEmitter(ex, ey, 0, 0);
+    fx.burst(coins);
+    return fx.stopThenRemove();
   }
 }
 

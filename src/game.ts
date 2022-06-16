@@ -39,6 +39,10 @@ export class Cell {
   remove(object: GameObject) {
     this.objects.splice(this.objects.indexOf(object), 1);
   }
+
+  isEmpty() {
+    return this.objects.length === 0;
+  }
 }
 
 export class Sprite {
@@ -375,11 +379,25 @@ export class Recipe {
   }
 }
 
+export abstract class Action {
+  abstract run(): void | Promise<void>;
+  done = false;
+
+  start(): void {
+    Promise.resolve(this.run()).then(() => this.done = true);
+  }
+
+  end() {}
+
+  update(dt: number) {}
+}
+
 export class Game {
   cells: Cell[] = [];
   coins: number = 0;
   swords: number = 0;
   recipes: Recipe[] = [];
+  actions: Action[] = [];
 
   constructor(readonly columns: number, readonly rows: number) {
     for (let y = 0; y < this.rows; y++) {
@@ -387,6 +405,15 @@ export class Game {
         this.cells[x + y * this.columns] = new Cell(x, y);
       }
     }
+  }
+
+  addAction(action: Action) {
+    this.actions.push(action);
+    action.start();
+  }
+
+  removeAction(action: Action) {
+    this.actions.splice(this.actions.indexOf(action), 1);
   }
 
   addRecipe(recipe: Recipe) {
@@ -451,6 +478,11 @@ export class Game {
     }
   }
 
+  getCellInDirection(x: number, y: number, direction: Direction): Cell | undefined {
+    let [dx, dy] = directionToVector(direction);
+    return this.getCell(x + dx, y + dy);
+  }
+
   getObjects(x: number, y: number): GameObject[] {
     let cell = this.getCell(x, y);
     return cell ? cell.objects : [];
@@ -487,6 +519,15 @@ export class Game {
   }
 
   update(dt: number) {
+    for (let action of this.actions) {
+      action.update(dt);
+
+      if (action.done) {
+        this.craftingCheck();
+        this.removeAction(action);
+      }
+    }
+
     for (let cell of this.cells) {
       for (let object of cell.objects) {
         object.update(dt);
