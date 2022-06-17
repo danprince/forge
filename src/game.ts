@@ -445,6 +445,13 @@ export class Shop {
   }
 }
 
+export abstract class Upgrade {
+  abstract readonly sprite: SpriteId;
+  abstract readonly name: string;
+  abstract readonly description: string;
+  apply() {}
+}
+
 export class Game {
   cells: Cell[] = [];
   coins: number = 0;
@@ -453,12 +460,20 @@ export class Game {
   actions: Action[] = [];
   shop = new Shop();
 
+  upgrades: Upgrade[] = [];
+  nextUpgradeCost: number = 100;
+
   constructor(readonly columns: number, readonly rows: number) {
     for (let y = 0; y < this.rows; y++) {
       for (let x = 0; x < this.columns; x++) {
         this.cells[x + y * this.columns] = new Cell(x, y);
       }
     }
+  }
+
+  addUpgrade(upgrade: Upgrade) {
+    this.upgrades.push(upgrade);
+    upgrade.apply();
   }
 
   addAction(action: Action) {

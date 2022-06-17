@@ -1,6 +1,7 @@
-import { panel, scroll, TextLine, tooltip } from "./components";
-import { align, atlas, local, opacity, over, pointer, print, resize, restore, save, screen, spr, SpriteId, sprr, translate, View } from "./engine";
-import { GameObject, ShopItem } from "./game";
+import { panel, progress, scroll, TextLine, tooltip } from "./components";
+import { align, atlas, local, opacity, over, pointer, print, rectfill, resize, restore, save, screen, spr, SpriteId, sprr, translate, View } from "./engine";
+import { GameObject, ShopItem, Upgrade } from "./game";
+import { PackMule } from "./upgrades";
 
 export abstract class Handler {
   start() {}
@@ -11,6 +12,7 @@ export abstract class Handler {
 export class UI extends View {
   viewport: ViewportView;
   shop: ShopView;
+  upgrades: UpgradeView;
   handlers: Handler[] = [];
 
   constructor(width: number, height: number) {
@@ -20,9 +22,13 @@ export class UI extends View {
     this.h = height;
     this.viewport = new ViewportView();
     this.shop = new ShopView();
+    this.upgrades = new UpgradeView();
     this.shop.h = this.viewport.h;
     this.shop.x = this.viewport.x - this.shop.w - 5;
     this.shop.y = this.viewport.y;
+    this.upgrades.x = this.viewport.x + this.viewport.w + 3;
+    this.upgrades.y = this.viewport.y;
+    this.upgrades.h = this.viewport.h;
   }
 
   private currentHandler(): Handler | undefined {
@@ -49,6 +55,7 @@ export class UI extends View {
   render() {
     this.viewport._render();
     this.shop._render();
+    this.upgrades._render();
   }
 
   pointerToGridExact(): [x: number, y: number] {
@@ -317,6 +324,57 @@ export class ShopGridView extends View {
       let offsetX = localPointerX - localSpriteX;
       let offsetY = localPointerY - localSpriteY;
       this.onPickupItem(item, offsetX, offsetY);
+    }
+  }
+}
+
+export class UpgradeView extends View {
+  constructor() {
+    super();
+    this.w = 20;
+  }
+
+  render(): void {
+    this.renderUpgradeButton();
+
+    for (let i = 0; i < game.upgrades.length; i++) {
+      this.renderUpgradeSlot(i + 1, game.upgrades[i]);
+    }
+  }
+
+  renderUpgradeSlot(index: number, upgrade: Upgrade) {
+    let x = 0;
+    let y = index * 20;
+    spr("slot_frame", x, y);
+    spr(upgrade.sprite, x + 2, y + 2);
+    let hover = over(x, y, 20, 20);
+
+    if (hover) {
+      tooltip(-4, y, [
+        upgrade.name,
+        upgrade.description,
+      ], "right");
+    }
+  }
+
+  renderUpgradeButton() {
+    let canAfford = game.coins >= game.nextUpgradeCost;
+    let hover = over(0, 0, 20, 20);
+    spr(hover ? "slot_frame_hover" : "slot_frame", 0, 0);
+    spr("upgrade_hammer", 2, 0);
+    rectfill(2, 14, 15, 3, "#3b3531");
+    progress(3, 15, 13, 1, game.coins / game.nextUpgradeCost, "#ff9e19", "#713400");
+
+    if (hover) {
+      tooltip(-4, 0, [
+        "Buy Upgrade",
+        `\x06${game.nextUpgradeCost}`
+      ], "right");
+    }
+
+    if (hover && pointer.pressed && canAfford) {
+      game.coins -= game.nextUpgradeCost;
+      game.addUpgrade(new PackMule());
     }
   }
 }

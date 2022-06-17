@@ -117,3 +117,8 @@ export function scroll(x: number, y: number, maybeLines: MaybeTextLine[]) {
     restore();
   });
 }
+
+export function progress(x: number, y: number, w: number, h: number, value: number, fg: Fill, bg: Fill) {
+  rectfill(x, y, w, h, bg);
+  rectfill(x, y, w * Math.min(value, 1) | 0, h, fg);
+}

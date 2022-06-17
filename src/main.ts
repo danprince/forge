@@ -53,5 +53,7 @@ for (let i = 0; i < 20; i++) {
   if (cell && ore) game.addObject(ore, cell.x, cell.y);
 }
 
+game.coins = 195;
+
 ui.pushHandler(new SwipeAndRotateHandler);
 init(ui);
