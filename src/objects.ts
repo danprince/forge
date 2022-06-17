@@ -201,4 +201,10 @@ export class Bucket extends GameObject {
   canBeMoved(): boolean {
     return true;
   }
+
+  onBump(object: GameObject, direction: Direction): void {
+    if (object.canBeMoved()) {
+      game.addAction(new Slide(object, direction));
+    }
+  }
 }
