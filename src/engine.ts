@@ -62,7 +62,6 @@ export function resize(w: number, h: number) {
  */
 
 import spritesheetSrc from "./assets/spritesheet.png";
-import fontImageSrc from "./assets/font.png";
 import atlas from "./assets/spritesheet.json";
 
 export { atlas };
@@ -280,6 +279,44 @@ function _tint(col: Fill): HTMLCanvasElement {
 }
 
 /**
+ * ---------------------- Text -------------------------
+ */
+
+import fontImageSrc from "./assets/font.png";
+import kerning from "./assets/kerning.json";
+
+const GLYPH_WIDTH = 5;
+const GLYPH_HEIGHT = 6;
+const LINE_SPACING = 1;
+
+/**
+ * Measure the size of a piece of text and return the required width/height.
+ */
+export function measure(text: string): [w: number, h: number] {
+  let gw = GLYPH_WIDTH;
+  let lh = GLYPH_HEIGHT + LINE_SPACING;
+  let w = 0;
+  let h = 1;
+  let l = 0;
+
+  for (let i = 0; i < text.length; i++) {
+    let ch = text[i];
+
+    if (ch === "\n") {
+      w = Math.max(w, l);
+      h += 1;
+      l = 0;
+    } else {
+      let k = kerning[ch as keyof typeof kerning] || 0;
+      l += gw + k;
+    }
+  }
+
+  w = Math.max(w, l);
+  return [w, h * lh];
+}
+
+/**
  * Print a string of text. No automatic wrapping but newlines are respected.
  * @param text The text to print
  * @param x The x coordinate to start (defaults to current text cursor)
@@ -302,16 +339,16 @@ export function print(text: string, x = _state.cursorX, y = _state.cursorY, col 
   let img = _tint(col);
   let imgShadow = _tint(shadow);
 
-  let w = 5;
-  let h = 6;
-  let lineSpacing = 1;
+  let ls = LINE_SPACING;
+  let h = GLYPH_HEIGHT;
+  let w = GLYPH_WIDTH;
 
   for (let i = 0; i < text.length; i++) {
     let ch = text[i];
 
     if (ch === "\n") {
       _x = x;
-      _y += h + lineSpacing;
+      _y += h + ls;
       continue;
     }
 
@@ -324,47 +361,20 @@ export function print(text: string, x = _state.cursorX, y = _state.cursorY, col 
     let dy = _y;
 
     if (shadow) {
-      ctx.drawImage(imgShadow, sx, sy, w, h, dx + 1, dy + 1, w, h);
       ctx.drawImage(imgShadow, sx, sy, w, h, dx, dy + 1, w, h);
       ctx.drawImage(imgShadow, sx, sy, w, h, dx + 1, dy, w, h);
     }
 
     ctx.drawImage(img, sx, sy, w, h, dx, dy, w, h);
-    _x += w;
+    _x += w + (kerning[ch as keyof typeof kerning] || 0);
   }
 
   _state.cursorX = x;
-  _state.cursorY = _y + h + lineSpacing;
+  _state.cursorY = _y + h + ls;
 
   return _x;
 }
 
-/**
- * ---------------------- Text -------------------------
- */
-
-/**
- * Measure the size of a piece of text and return the required width/height.
- */
-export function measure(text: string): [w: number, h: number] {
-  let w = 0;
-  let h = 1;
-  let l = 0;
-
-  for (let i = 0; i < text.length; i++) {
-    let ch = text[i];
-    if (ch === "\n") {
-      w = Math.max(w, l);
-      h += 1;
-      l = 0;
-    } else {
-      l += 1;
-    }
-  }
-
-  w = Math.max(w, l);
-  return [w * 5, h * 7];
-}
 
 /**
  * ---------------------- Input -------------------------
