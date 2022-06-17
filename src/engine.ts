@@ -260,24 +260,6 @@ export function rectfill(x: number, y: number, w: number, h: number, col = _stat
   ctx.restore();
 }
 
-let _cache = new Map<Fill, HTMLCanvasElement>();
-
-function _tint(col: Fill): HTMLCanvasElement {
-  if (!_cache.has(col)) {
-    let canvas = document.createElement("canvas");
-    let ctx = canvas.getContext("2d")!;
-    canvas.width = fontImage.width;
-    canvas.height = fontImage.height;
-    ctx.drawImage(fontImage, 0, 0);
-    ctx.fillStyle = col;
-    ctx.globalCompositeOperation = "source-atop";
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-    _cache.set(col, canvas);
-  }
-
-  return _cache.get(col)!;
-}
-
 /**
  * ---------------------- Text -------------------------
  */
@@ -365,7 +347,9 @@ export function print(text: string, x = _state.cursorX, y = _state.cursorY, col 
       ctx.drawImage(imgShadow, sx, sy, w, h, dx + 1, dy, w, h);
     }
 
-    ctx.drawImage(img, sx, sy, w, h, dx, dy, w, h);
+    // Glyphs below 32 are already colored
+    let _img = code < 32 ? fontImage : img;
+    ctx.drawImage(_img, sx, sy, w, h, dx, dy, w, h);
     _x += w + (kerning[ch as keyof typeof kerning] || 0);
   }
 
@@ -373,6 +357,24 @@ export function print(text: string, x = _state.cursorX, y = _state.cursorY, col 
   _state.cursorY = _y + h + ls;
 
   return _x;
+}
+
+let _cache = new Map<Fill, HTMLCanvasElement>();
+
+function _tint(col: Fill): HTMLCanvasElement {
+  if (!_cache.has(col)) {
+    let canvas = document.createElement("canvas");
+    let ctx = canvas.getContext("2d")!;
+    canvas.width = fontImage.width;
+    canvas.height = fontImage.height;
+    ctx.drawImage(fontImage, 0, 0);
+    ctx.fillStyle = col;
+    ctx.globalCompositeOperation = "source-atop";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    _cache.set(col, canvas);
+  }
+
+  return _cache.get(col)!;
 }
 
 

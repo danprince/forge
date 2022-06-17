@@ -1,4 +1,4 @@
-import { panel, scroll, TextLine } from "./components";
+import { panel, scroll, TextLine, tooltip } from "./components";
 import { align, atlas, local, opacity, over, pointer, print, resize, restore, save, screen, spr, SpriteId, sprr, translate, View } from "./engine";
 import { GameObject, ShopItem } from "./game";
 
@@ -302,13 +302,13 @@ export class ShopGridView extends View {
 
     if (hover) {
       let costs: string[] = [];
-      if (item.cost.coins) costs.push(`${item.cost.coins} coins`);
-      if (item.cost.swords) costs.push(`${item.cost.swords} swords`);
+      if (item.cost.coins) costs.push(`\x06${item.cost.coins}`);
+      if (item.cost.swords) costs.push(`\x07${item.cost.swords}`);
 
-      scroll(dx + dw, dy, [
+      tooltip(dx + dw, dy, [
         [disabled ? "red" : "white", item._reference.name],
         item._reference.description,
-        [disabled ? "red" : "#ff9e19", costs.join(" + ")],
+        [disabled ? "red" : "#ff9e19", costs.join(" ")],
       ]);
     }
 
