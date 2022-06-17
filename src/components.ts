@@ -1,4 +1,4 @@
-import { align, atlas, color, cursor, Fill, measure, over, pointer, print, rect, rectfill, restore, save, shadow, SpriteId, sspr, global, renderAbove } from "./engine";
+import { align, atlas, color, cursor, Fill, measure, over, pointer, print, rect, rectfill, restore, save, shadow, SpriteId, sspr, global, renderAbove, TextAlign } from "./engine";
 
 /**
  * Draws a panel from a 9-slice sprite, where each slice is 3x3.
@@ -68,19 +68,21 @@ export function measureLines(lines: TextLine[]): [w: number, h: number] {
 
 type MaybeTextLine = TextLine | false | undefined | null;
 
-export function tooltip(x: number, y: number, maybeLines: MaybeTextLine[]) {
+export function tooltip(x: number, y: number, maybeLines: MaybeTextLine[], _align: TextAlign = "left") {
   let lines = maybeLines.filter(line => line) as TextLine[];
-  let padding = 2;
+  let padding = 3;
   let [w, h] = measureLines(lines);
   h += padding * 1;
   w += padding * 1;
   [x, y] = global(x, y);
 
+  if (_align === "center") x -= w / 2 | 0;
+  if (_align === "right") x -= w;
+
   renderAbove(() => {
     save();
     align("left");
-    rectfill(x, y, w, h, "rgba(0, 0, 0, 0.8)");
-    rect(x, y, w, h, "#ccc");
+    panel("panel_black", x, y, w + padding, h + padding - 2);
     cursor(x + padding, y + padding);
     for (let line of lines) {
       let fill = typeof line === "string" ? "white" : line[0];

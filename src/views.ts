@@ -111,7 +111,7 @@ export class ViewportView extends View {
         object.canBeMoved() && `\x04 to \x02`,
       ].filter(x => x).join(" ");
 
-      print(msg, 0, this.h + 3, "#7b685c");
+      tooltip(this.w / 2, this.h + 2, [["#7b7471", msg]], "center");
     }
   }
 
@@ -242,7 +242,7 @@ export class ShopView extends View {
     print(amount.toString(), w - 2, 3, "white", "black");
     restore();
     if (hover) {
-      scroll(x, y - h, tooltipLines);
+      tooltip(x, y - h, tooltipLines);
     }
   }
 }
@@ -306,9 +306,9 @@ export class ShopGridView extends View {
       if (item.cost.swords) costs.push(`\x07${item.cost.swords}`);
 
       tooltip(dx + dw, dy, [
-        [disabled ? "red" : "white", item._reference.name],
+        [disabled ? "#931200" : "white", item._reference.name],
         item._reference.description,
-        [disabled ? "red" : "#ff9e19", costs.join(" ")],
+        [disabled ? "#931200" : "#ff9e19", costs.join(" ")],
       ]);
     }
 
