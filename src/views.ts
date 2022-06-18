@@ -1,5 +1,5 @@
-import { panel, progress, scroll, TextLine, tooltip } from "./components";
-import { align, atlas, local, opacity, over, pointer, print, rectfill, resize, restore, save, screen, spr, SpriteId, sprr, translate, View } from "./engine";
+import { panel, progress, TextLine, tooltip } from "./components";
+import { align, local, opacity, over, pointer, print, rectfill, resize, restore, save, screen, spr, SpriteId, sprr, translate, View } from "./engine";
 import { GameObject, ShopItem, Upgrade } from "./game";
 import { PackMule } from "./upgrades";
 
