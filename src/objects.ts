@@ -2,15 +2,12 @@ import { Slide } from "./actions";
 import { Bar, Ore, SwordBlade, SwordHandle, SwordTip } from "./crafting";
 import { sleep } from "./engine";
 import { createBloodEmitter, createCoinEmitter, createSmokeEmitter, createSparkEmitter } from "./fx";
-import { Direction, directionToRotation, GameObject, Material, Sprite } from "./game";
+import { AnimatedSprite, Direction, directionToRotation, GameObject, Material, Sprite } from "./game";
 
 export class Furnace extends GameObject {
   name = "Furnace";
   description = "Turns ores into bars";
-
-  constructor() {
-    super(new Sprite("furnace"));
-  }
+  sprite = new Sprite("furnace");
 
   isOutputClear(direction: Direction): boolean {
     let cell = game.getCellInDirection(this.x, this.y, direction);
@@ -57,10 +54,7 @@ export class Furnace extends GameObject {
 export class Anvil extends GameObject {
   name = "Anvil";
   description = "Turns bars into parts";
-
-  constructor() {
-    super(new Sprite("anvil"));
-  }
+  sprite = new Sprite("anvil");
 
   isOutputClear(direction: Direction): boolean {
     let cell = game.getCellInDirection(this.x, this.y, direction);
@@ -109,9 +103,13 @@ export class Mule extends GameObject {
   name = "Mule";
   description = "Sells items at trade price";
 
-  constructor() {
-    super(new Sprite("pack_mule"));
-  }
+  sprite = new AnimatedSprite({
+    "idle": {
+      speed: 400,
+      loop: true,
+      frames: ["pack_mule", "pack_mule_2"],
+    },
+  }, "idle");
 
   canBeMoved(): boolean {
     return true;
@@ -141,9 +139,13 @@ export class Goblin extends GameObject {
   name = "Goblin";
   description = "Steals items";
 
-  constructor() {
-    super(new Sprite("goblin"));
-  }
+  sprite = new AnimatedSprite({
+    "idle": {
+      speed: 400,
+      loop: true,
+      frames: ["goblin", "goblin_2"],
+    },
+  }, "idle");
 
   canAccept(object: GameObject): object is Material {
     return object instanceof Material;
@@ -172,9 +174,17 @@ export class Warrior extends GameObject {
   name = "Warrior";
   description = "Kills goblins";
 
-  constructor() {
-    super(new Sprite("warrior"));
-  }
+  sprite = new AnimatedSprite({
+    "idle": {
+      speed: 400,
+      loop: true,
+      frames: ["warrior", "warrior_2"],
+    },
+    "attack": {
+      speed: 75,
+      frames: ["warrior_attack_1", "warrior_attack_2", "warrior_attack_3"],
+    },
+  }, "idle");
 
   canBeMoved(): boolean {
     return true;
@@ -182,6 +192,9 @@ export class Warrior extends GameObject {
 
   onBump(object: GameObject): void {
     if (object instanceof Goblin) {
+      this.sprite.setAnimation("attack").then(() => {
+        this.sprite.setAnimation("idle");
+      });
       game.removeObject(object);
       let [dx, dy] = ui.viewport.gridToGlobal(object.x + 0.5, object.y + 0.5);
       let fx = createBloodEmitter(dx, dy);
@@ -193,10 +206,7 @@ export class Warrior extends GameObject {
 
 export class Bucket extends GameObject {
   name = "Bucket";
-
-  constructor() {
-    super(new Sprite("bucket"));
-  }
+  sprite = new Sprite("bucket");
 
   canBeMoved(): boolean {
     return true;

@@ -255,8 +255,8 @@ export class ShopView extends View {
 }
 
 export class ShopGridView extends View {
-  private cellWidth = atlas["slot_frame"].w + 1;
-  private cellHeight = atlas["slot_frame"].h + 1;
+  private cellWidth = 20;
+  private cellHeight = 20;
 
   rows: number;
   columns: number;
@@ -302,7 +302,7 @@ export class ShopGridView extends View {
     let localSpriteY = dy + pad;
 
     save();
-    spr(disabled ? "slot_frame" : active ? "slot_frame_active" : hover ? "slot_frame_hover" : "slot_frame", dx, dy);
+    panel(disabled ? "panel_grey_round" : active ? "panel_grey_round_active" : hover ? "panel_grey_round_hover" : "panel_grey_round", dx, dy, this.cellWidth - 1, this.cellHeight - 1);
     if (disabled) opacity(0.5);
     spr(item.sprite, localSpriteX, localSpriteY);
     restore();
@@ -345,7 +345,7 @@ export class UpgradeView extends View {
   renderUpgradeSlot(index: number, upgrade: Upgrade) {
     let x = 0;
     let y = index * 20;
-    spr("slot_frame", x, y);
+    panel("panel_grey_round", x, y, 19, 19)
     spr(upgrade.sprite, x + 2, y + 2);
     let hover = over(x, y, 20, 20);
 
@@ -359,9 +359,9 @@ export class UpgradeView extends View {
 
   renderUpgradeButton() {
     let canAfford = game.coins >= game.nextUpgradeCost;
-    let hover = over(0, 0, 20, 20);
-    spr(hover ? "slot_frame_hover" : "slot_frame", 0, 0);
-    spr("upgrade_hammer", 2, 0);
+    let hover = over(0, 0, 19, 19);
+    panel(hover ? "panel_grey_round_hover" : "panel_grey_round", 0, 0, 19, 19)
+    spr(canAfford ? "upgrade_hammers_ready" : "upgrade_hammers", 1, 2);
     rectfill(2, 14, 15, 3, "#3b3531");
     progress(3, 15, 13, 1, game.coins / game.nextUpgradeCost, "#ff9e19", "#713400");
 

@@ -54,28 +54,78 @@ export class Cell {
   }
 }
 
+export interface Animation {
+  speed: number;
+  loop?: boolean;
+  frames: SpriteId[];
+}
+
 export class Sprite {
   name: SpriteId;
   x = 0;
   y = 0;
   rotation = 0;
 
-  constructor(name: SpriteId) {
+  constructor(
+    name: SpriteId,
+  ) {
     this.name = name;
+  }
+
+  update(dt: number) {}
+}
+
+export class AnimatedSprite<Animations extends Record<string, Animation> = any> extends Sprite {
+  private animations: Animations;
+  private currentAnimation: keyof Animations;
+  private timeToNextFrame: number = 0;
+  private frameIndex: number = 0;
+  private _resolve = () => {};
+
+  constructor(
+    animations: Animations,
+    initialAnimation: keyof Animations,
+  ) {
+    super(animations[initialAnimation].frames[0]);
+    this.animations = animations;
+    this.currentAnimation = initialAnimation;
+    this.setAnimation(this.currentAnimation);
+  }
+
+  setAnimation(name: keyof Animations) {
+    this.currentAnimation = name;
+    this.timeToNextFrame = this.animations[name].speed;
+    this.frameIndex = 0;
+    this.name = this.animations[name].frames[0];
+    return new Promise<void>(resolve => this._resolve = resolve);
+  }
+
+  update(dt: number) {
+    this.timeToNextFrame -= dt;
+
+    if (this.timeToNextFrame <= 0) {
+      let animation = this.animations[this.currentAnimation];
+      this.timeToNextFrame = animation.speed;
+      this.frameIndex += 1;
+
+      if (animation.loop) {
+        this.frameIndex = this.frameIndex % animation.frames.length;
+      } else if (this.frameIndex === animation.frames.length) {
+        return this._resolve();
+      }
+
+      this.name = animation.frames[this.frameIndex];
+    }
   }
 }
 
 export class GameObject {
-  sprite: Sprite;
+  sprite: Sprite = undefined!;
   x: number = 0;
   y: number = 0;
   rotation: number = 0;
   name: string = "";
   description: string = "";
-
-  constructor(sprite: Sprite) {
-    this.sprite = sprite;
-  }
 
   get direction(): Direction {
     switch (this.rotation % 4) {
@@ -600,6 +650,7 @@ export class Game {
     for (let cell of this.cells) {
       for (let object of cell.objects) {
         object.update(dt);
+        object.sprite.update(dt);
       }
     }
   }
