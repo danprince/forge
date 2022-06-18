@@ -29,8 +29,8 @@ export function shuffled<T>(array: T[]): T[] {
  * ---------------------- Window -------------------------
  */
 
-let _width = 100;
-let _height = 100;
+let _width = 320;
+let _height = 180;
 
 /**
  * Returns the current size of the canvas.
@@ -48,7 +48,7 @@ export function screen() {
 export function resize(w: number, h: number) {
   let scaleX = window.innerWidth / w;
   let scaleY = window.innerHeight / h;
-  let scale = Math.min(scaleX, scaleY);
+  let scale = Math.min(scaleX, scaleY, 3);
   _width = canvas.width = w;
   _height = canvas.height = h;
   canvas.style.width = `${w * scale}px`;

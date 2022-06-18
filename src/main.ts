@@ -14,7 +14,7 @@ declare global {
 }
 
 (window as any).game = new Game(10, 10);
-(window as any).ui = new UI(300, 300);
+(window as any).ui = new UI(320, 180);
 
 game.addRecipe(Sword);
 game.addAction(new SpawnOre());
