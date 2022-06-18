@@ -79,6 +79,10 @@ export class Anvil extends GameObject {
   description = "Turns bars into parts";
   sprite = new Sprite("anvil");
 
+  canBeMoved() {
+    return true;
+  }
+
   isOutputClear(direction: Direction): boolean {
     let cell = game.getCellInDirection(this.x, this.y, direction);
     return cell != null && cell.isEmpty();
@@ -90,6 +94,33 @@ export class Anvil extends GameObject {
       object.component === Bar &&
       this.isOutputClear(direction)
     );
+  }
+
+  canConsume(object: GameObject, direction: Direction): object is Material {
+    return (
+      object instanceof Material &&
+      object.component === Bar
+    );
+  }
+
+  onConsume(bar: Material, direction: Direction): void {
+    game.removeObject(bar);
+
+    let output = Material.createByRarity({
+      component: [SwordTip, SwordBlade, SwordHandle],
+      element: bar.element,
+    });
+
+    if (output) {
+      if (output.canBeRotated()) {
+        output.rotation = directionToRotation(direction);
+      }
+
+      game.addObject(output, this.x, this.y);
+      game.addAction(new Slide(this, direction));
+    }
+
+    this.emitSparks();
   }
 
   onAccept(bar: Material, direction: Direction): void {
