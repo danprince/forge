@@ -32,9 +32,8 @@ export class UI extends View {
     this.upgrades.y = this.viewport.y;
     this.upgrades.h = this.viewport.h;
     this.raidTimer.w = this.viewport.w + 4;
-    this.raidTimer.h = 10;
     this.raidTimer.x = this.viewport.x - 2;
-    this.raidTimer.y = this.viewport.y + this.viewport.h + 3;
+    this.raidTimer.y = this.viewport.y - this.raidTimer.h - 3;
   }
 
   private currentHandler(): Handler | undefined {
@@ -164,12 +163,18 @@ export class ViewportView extends View {
 }
 
 export class RaidTimerView extends View {
+  h = 10;
   render() {
-    let value = game.eventTimer / game.nextEventTime;
-    panel("panel_grey", 0, 0, this.w, this.h);
-    progress(2, 2, this.w - 4, 6, value, "#27e2a1", "#3b3531");
+    let value = game.event ? 1 : game.eventTimer / game.nextEventTime;
+    panel("panel_frame_brown", 0, 0, this.w, this.h);
     align("center");
-    print("Next Raid", this.w / 2, 2, "white", "black");
+    progress(2, 2, this.w - 4, 6, value, "#27e2a1", "#3b3531");
+
+    if (game.event) {
+      print(game.event.name, this.w / 2, 2, "white", "black");
+    } else {
+      print("Next Raid", this.w / 2, 2, "white", "black");
+    }
   }
 }
 

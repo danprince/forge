@@ -4,6 +4,8 @@ import { Direction, Event } from "./game";
 import { Goblin, GoblinBrute, GoblinLooter, GoblinShaman } from "./objects";
 
 export class GoblinRaid extends Event {
+  name = "Goblin Raid";
+
   getSpawnCells() {
     return game.cells.filter(cell => {
       return cell.objects.length === 0 && (

@@ -532,6 +532,7 @@ export abstract class Upgrade {
 }
 
 export abstract class Event {
+  abstract name: string;
   start() {}
   stop() {}
   update(dt: number) {}
