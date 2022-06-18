@@ -166,7 +166,12 @@ export class GameObject {
     return false;
   }
 
+  canConsume(object: GameObject, direction: Direction): object is GameObject {
+    return false;
+  }
+
   onAccept(object: GameObject, direction: Direction) {}
+  onConsume(object: GameObject, direction: Direction) {}
   onBump(object: GameObject, direction: Direction) {}
 
   update(dt: number) {}
@@ -567,12 +572,15 @@ export class Game {
       let accepted = !clear && cell.objects
         .some(target => target.canAccept(object, direction));
 
-      if (clear || accepted) {
+      let consumes = !clear && cell.objects
+        .some(target => object.canConsume(target, direction));
+
+      if (clear || accepted || consumes) {
         x += dx;
         y += dy;
       }
 
-      if (accepted) break;
+      if (accepted || consumes) break;
     }
 
     return [x, y];

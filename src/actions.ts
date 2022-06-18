@@ -41,8 +41,15 @@ export class Slide extends Action {
     // Tween the sprite to the destination
     await tween(object.sprite, { x: lx1, y: ly1 }, duration);
 
-    // Check whether we'll be accepted by any objects at the destination
+    // Check whether we'll be accepted/consume any objects at the destination
     let targets = game.getObjects(dstX, dstY);
+
+    for (let target of targets) {
+      if (object.canConsume(target, direction)) {
+        object.onConsume(target, direction);
+        break;
+      }
+    }
 
     for (let target of targets) {
       if (target.canAccept(object, direction)) {

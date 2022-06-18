@@ -119,7 +119,20 @@ export class Mule extends GameObject {
     return object instanceof Material;
   }
 
+  canConsume(object: GameObject): object is Material {
+    return object instanceof Material;
+  }
+
   onAccept(object: Material): void {
+    this.sell(object);
+  }
+
+  onConsume(object: Material, direction: Direction): void {
+    this.sell(object);
+    game.addAction(new Slide(this, direction));
+  }
+
+  sell(object: Material) {
     game.removeObject(object);
     // TODO: Use better calculation
     let coins = 5;
