@@ -253,7 +253,8 @@ export class Material extends GameObject {
     readonly spriteId: SpriteId,
     readonly set?: SetBonus,
   ) {
-    super(new Sprite(spriteId));
+    super();
+    this.sprite = new Sprite(spriteId);
 
     if (this.set) {
       this.name = `${this.set.name} ${this.component.name}`;
