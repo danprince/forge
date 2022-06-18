@@ -1,4 +1,4 @@
-import { SpriteId } from "./engine";
+import { atlas, SpriteId } from "./engine";
 
 export type Direction = "north" | "east" | "south" | "west";
 
@@ -64,12 +64,16 @@ export class Sprite {
   name: SpriteId;
   x = 0;
   y = 0;
+  w = 0;
+  h = 0;
   rotation = 0;
 
   constructor(
     name: SpriteId,
   ) {
     this.name = name;
+    this.w = atlas[name].w;
+    this.h = atlas[name].h;
   }
 
   update(dt: number) {}
@@ -119,6 +123,11 @@ export class AnimatedSprite<Animations extends Record<string, Animation> = any> 
   }
 }
 
+export interface Hitpoints {
+  current: number;
+  max: number;
+}
+
 export class GameObject {
   sprite: Sprite = undefined!;
   x: number = 0;
@@ -126,6 +135,7 @@ export class GameObject {
   rotation: number = 0;
   name: string = "";
   description: string = "";
+  hp?: Hitpoints;
 
   get direction(): Direction {
     switch (this.rotation % 4) {

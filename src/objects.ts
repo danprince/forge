@@ -1,8 +1,8 @@
-import { Slide } from "./actions";
+import { Damage, Slide } from "./actions";
 import { Bar, Ore, SwordBlade, SwordHandle, SwordTip } from "./crafting";
 import { sleep } from "./engine";
-import { createBloodEmitter, createCoinEmitter, createSmokeEmitter, createSparkEmitter } from "./fx";
-import { AnimatedSprite, Direction, directionToRotation, GameObject, Material, Sprite } from "./game";
+import { createCoinEmitter, createSmokeEmitter, createSparkEmitter } from "./fx";
+import { AnimatedSprite, Direction, directionToRotation, GameObject, Hitpoints, Material, Sprite } from "./game";
 
 export class Furnace extends GameObject {
   name = "Furnace";
@@ -138,6 +138,7 @@ export class Mule extends GameObject {
 export class Goblin extends GameObject {
   name = "Goblin";
   description = "Steals items";
+  hp = { current: 1, max: 1 };
 
   sprite = new AnimatedSprite({
     "idle": {
@@ -173,6 +174,7 @@ export class Goblin extends GameObject {
 export class Warrior extends GameObject {
   name = "Warrior";
   description = "Kills goblins";
+  hp = { current: 3, max: 3 };
 
   sprite = new AnimatedSprite({
     "idle": {
@@ -195,11 +197,8 @@ export class Warrior extends GameObject {
       this.sprite.setAnimation("attack").then(() => {
         this.sprite.setAnimation("idle");
       });
-      game.removeObject(object);
-      let [dx, dy] = ui.viewport.gridToGlobal(object.x + 0.5, object.y + 0.5);
-      let fx = createBloodEmitter(dx, dy);
-      fx.burst(30);
-      fx.stopThenRemove();
+      game.addAction(new Damage(this, object, 1));
+      game.addAction(new Damage(object, this, 1));
     }
   }
 }

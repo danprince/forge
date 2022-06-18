@@ -1,5 +1,6 @@
 import { Ore } from "./crafting";
-import { tween } from "./engine";
+import { assert, tween } from "./engine";
+import { createBloodEmitter } from "./fx";
 import { Action, Direction, directionToVector, GameObject, Material } from "./game";
 import { Goblin } from "./objects";
 
@@ -107,5 +108,43 @@ export class SpawnOre extends Action {
         cell.y === game.rows - 1
       );
     });
+  }
+}
+
+export class Damage extends Action {
+  constructor(
+    readonly dealer: GameObject,
+    readonly target: GameObject,
+    readonly amount: number
+  ) {
+    super();
+  }
+
+  run() {
+    let { target, amount } = this;
+    assert(target.hp, "Damage target does not have HP");
+    target.hp.current -= amount;
+    target.hp.current = Math.min(target.hp.current, target.hp.max);
+    target.hp.current = Math.max(0, target.hp.current);
+    if (target.hp.current === 0) {
+      game.addAction(new Death(target));
+    }
+  }
+}
+
+export class Death extends Action {
+  constructor(
+    readonly target: GameObject,
+  ) {
+    super();
+  }
+
+  run() {
+    let { target } = this;
+    game.removeObject(target);
+    let [dx, dy] = ui.viewport.gridToGlobal(target.x + 0.5, target.y + 0.5);
+    let fx = createBloodEmitter(dx, dy);
+    fx.burst(30);
+    fx.stopThenRemove();
   }
 }

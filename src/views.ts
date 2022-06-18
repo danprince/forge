@@ -80,6 +80,23 @@ export class ViewportView extends View {
     this.y = Math.floor(h / 2 - this.h / 2);
   }
 
+  localToGrid(x: number, y: number): [x: number, y: number] {
+    return [x / this.tileSize, y / this.tileSize];
+  }
+
+  gridToLocal(x: number, y: number): [x: number, y: number] {
+    return [x * this.tileSize, y * this.tileSize];
+  }
+
+  globalToGrid(x: number, y: number) {
+    return this.localToGrid(x - this.x, y - this.y);
+  }
+
+  gridToGlobal(x: number, y: number) {
+    let [lx, ly] = this.gridToLocal(x, y);
+    return [lx + this.x, ly + this.y];
+  }
+
   render() {
     let ts = this.tileSize;
 
@@ -97,12 +114,7 @@ export class ViewportView extends View {
         let objects = game.getObjects(x, y);
 
         for (let object of objects) {
-          sprr(
-            object.sprite.name,
-            object.sprite.x | 0,
-            object.sprite.y | 0,
-            object.sprite.rotation,
-          );
+          this.renderObject(object);
         }
       }
     }
@@ -122,21 +134,25 @@ export class ViewportView extends View {
     }
   }
 
-  localToGrid(x: number, y: number): [x: number, y: number] {
-    return [x / this.tileSize, y / this.tileSize];
-  }
+  renderObject(object: GameObject) {
+    sprr(
+      object.sprite.name,
+      object.sprite.x | 0,
+      object.sprite.y | 0,
+      object.sprite.rotation,
+    );
 
-  gridToLocal(x: number, y: number): [x: number, y: number] {
-    return [x * this.tileSize, y * this.tileSize];
-  }
-
-  globalToGrid(x: number, y: number) {
-    return this.localToGrid(x - this.x, y - this.y);
-  }
-
-  gridToGlobal(x: number, y: number) {
-    let [lx, ly] = this.gridToLocal(x, y);
-    return [lx + this.x, ly + this.y];
+    if (object.hp && object.hp.max > 1) {
+      save();
+      translate(object.sprite.x, object.sprite.y);
+      translate(object.sprite.w / 2 | 0, object.sprite.h);
+      translate(-object.hp.max * 2, -2);
+      for (let i = 0; i < object.hp.max; i++) {
+        let empty = i >= object.hp.current;
+        spr(empty ? "health_pip_empty" : "health_pip", i * 4, 0);
+      }
+      restore();
+    }
   }
 }
 

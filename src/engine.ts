@@ -2,6 +2,10 @@
  * ---------------------- Helpers -------------------------
  */
 
+export function assert(cond: any, msg: string): asserts cond {
+  if (!cond) throw new Error(msg);
+}
+
 export function random(n: number): number {
   return Math.random() * n;
 }
