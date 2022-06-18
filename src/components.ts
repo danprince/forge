@@ -1,4 +1,4 @@
-import { align, atlas, color, cursor, Fill, measure, over, pointer, print, rect, rectfill, restore, save, shadow, SpriteId, sspr, global, renderAbove, TextAlign, translate, opacity, spr } from "./engine";
+import { align, atlas, color, cursor, Fill, measure, over, pointer, print, rectfill, restore, save, SpriteId, sspr, global, renderAbove, TextAlign } from "./engine";
 
 /**
  * Draws a panel from a 9-slice sprite, where each slice is 3x3.

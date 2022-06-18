@@ -2,7 +2,7 @@ import { Damage, Slide } from "./actions";
 import { Bar, Ore, SwordBlade, SwordHandle, SwordTip } from "./crafting";
 import { sleep } from "./engine";
 import { createCoinEmitter, createSmokeEmitter, createSparkEmitter } from "./fx";
-import { AnimatedSprite, Direction, directionToRotation, GameObject, Hitpoints, Material, Sprite } from "./game";
+import { AnimatedSprite, Direction, directionToRotation, GameObject, Material, Sprite } from "./game";
 
 export class Furnace extends GameObject {
   name = "Furnace";

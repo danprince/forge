@@ -1,4 +1,4 @@
-import { Material, Upgrade } from "./game";
+import { Upgrade } from "./game";
 import { Mule } from "./objects";
 
 export class PackMule extends Upgrade {
