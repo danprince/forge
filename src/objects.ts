@@ -1,13 +1,17 @@
-import { Damage, Slide } from "./actions";
+import { Damage, Heal, Slide } from "./actions";
 import { Bar, Ore, SwordBlade, SwordHandle, SwordTip } from "./crafting";
-import { sleep } from "./engine";
+import { randomElement, sleep } from "./engine";
 import { createCoinEmitter, createSmokeEmitter, createSparkEmitter } from "./fx";
-import { AnimatedSprite, Direction, directionToRotation, GameObject, Material, Sprite } from "./game";
+import { AnimatedSprite, Direction, DIRECTIONS, directionToRotation, GameObject, Material, Sprite, Tags } from "./game";
 
 export class Furnace extends GameObject {
   name = "Furnace";
   description = "Turns ores into bars";
   sprite = new Sprite("furnace");
+
+  canBeMoved() {
+    return true;
+  }
 
   isOutputClear(direction: Direction): boolean {
     let cell = game.getCellInDirection(this.x, this.y, direction);
@@ -22,6 +26,29 @@ export class Furnace extends GameObject {
     );
   }
 
+  canConsume(object: GameObject, direction: Direction): object is Material {
+    return (
+      object instanceof Material &&
+      object.component === Ore
+    );
+  }
+
+  onConsume(ore: Material, direction: Direction): void {
+    game.removeObject(ore);
+
+    let bar = Material.createByRarity({
+      component: Bar,
+      element: ore.element,
+    });
+
+    if (bar) {
+      game.addObject(bar, this.x, this.y);
+      game.addAction(new Slide(this, direction));
+    }
+
+    this.emitSmoke();
+  }
+
   onAccept(ore: Material, direction: Direction): void {
     game.removeObject(ore);
 
@@ -31,10 +58,6 @@ export class Furnace extends GameObject {
     });
 
     if (bar) {
-      if (bar.canBeRotated()) {
-        bar.rotation = directionToRotation(direction);
-      }
-
       game.addObject(bar, this.x, this.y);
       game.addAction(new Slide(bar, direction));
     }
@@ -152,6 +175,7 @@ export class Goblin extends GameObject {
   name = "Goblin";
   description = "Steals items";
   hp = { current: 1, max: 1 };
+  tags = [Tags.Goblin];
 
   sprite = new AnimatedSprite({
     "idle": {
@@ -184,10 +208,148 @@ export class Goblin extends GameObject {
   }
 }
 
+export class GoblinBrute extends GameObject {
+  name = "Brute";
+  description = "Steals objects";
+  hp = { current: 1, max: 3 };
+  tags = [Tags.Goblin];
+
+  sprite = new AnimatedSprite({
+    "idle": {
+      speed: 400,
+      loop: true,
+      frames: ["brute_1", "brute_2"],
+    },
+  }, "idle");
+
+  canAccept(object: GameObject): object is GameObject {
+    return (
+      !(object instanceof Material) &&
+      !object.tags.includes(Tags.Dwarf) &&
+      !object.tags.includes(Tags.Goblin)
+    );
+  }
+
+  onAccept(object: Material): void {
+    game.removeObject(object);
+    this.puffOfSmoke();
+  }
+
+  private puffOfSmoke() {
+    let [ex, ey] = ui.viewport.gridToGlobal(this.x + 0.5, this.y + 0.5);
+    let fx = createSmokeEmitter(ex, ey);
+    fx.initialAngleSpread = Math.PI * 2;
+    fx.floorLevel = -Infinity;
+    fx.initialSpeed = 20;
+    fx.initialLife = 400;
+    fx.initialLifeSpread = 100;
+    fx.gravity = 0;
+    fx.burst(20);
+    return fx.stopThenRemove();
+  }
+}
+
+export class GoblinLooter extends GameObject {
+  name = "Looter";
+  description = "Looks rich";
+  hp = { current: 1, max: 1 };
+  tags = [Tags.Goblin];
+
+  sprite = new AnimatedSprite({
+    "idle": {
+      speed: 400,
+      loop: true,
+      frames: ["looter_1", "looter_2"],
+    },
+  }, "idle");
+}
+
+export class GoblinShaman extends GameObject {
+  name = "Shaman";
+  description = "Creates totems";
+  hp = { current: 1, max: 1 };
+  tags = [Tags.Goblin];
+
+  sprite = new AnimatedSprite({
+    "idle": {
+      speed: 400,
+      loop: true,
+      frames: ["shaman_1", "shaman_2"],
+    },
+  }, "idle");
+
+  speed = 3_000;
+  timer = 0;
+  totemChance = 0.1;
+
+  update(dt: number) {
+    this.timer -= dt;
+
+    if (this.timer <= 0) {
+      this.timer = this.speed;
+      if (Math.random() < this.totemChance) {
+        this.spawnTotem();
+        this.runAway();
+      }
+    }
+  }
+
+  spawnTotem() {
+    game.addObject(new GoblinTotem(), this.x, this.y);
+  }
+
+  runAway() {
+    let directions = DIRECTIONS.filter(direction => {
+      let cell = game.getCellInDirection(this.x, this.y, direction);
+      return cell?.isEmpty();
+    });
+
+    if (directions.length > 0) {
+      let direction = randomElement(directions)
+      game.addAction(new Slide(this, direction));
+    }
+  }
+}
+
+export class GoblinTotem extends GameObject {
+  name = "Totem";
+  description = "Heals goblins";
+  hp = { current: 1, max: 1 };
+  sprite = new Sprite("goblin_totem");
+  speed = 5_000;
+  timer = this.speed;
+
+  update(dt: number) {
+    this.timer -= dt;
+
+    if (this.timer <= 0) {
+      this.timer = this.speed;
+      this.heal();
+    }
+  }
+
+  heal() {
+    for (let i = -1; i <= 1; i++) {
+      for (let j = -1; j <= 1; j++) {
+        let x = this.x + i;
+        let y = this.y + j;
+        let cell = game.getCell(x, y);
+        if (cell == null) continue;
+        for (let object of cell.objects) {
+          if (object.hp && object.tags.includes(Tags.Goblin)) {
+            game.addAction(new Heal(object, 1));
+          }
+        }
+      }
+    }
+  }
+}
+
 export class Warrior extends GameObject {
   name = "Warrior";
   description = "Kills goblins";
   hp = { current: 3, max: 3 };
+  tags = [Tags.Dwarf];
 
   sprite = new AnimatedSprite({
     "idle": {
@@ -206,7 +368,7 @@ export class Warrior extends GameObject {
   }
 
   onBump(object: GameObject): void {
-    if (object instanceof Goblin) {
+    if (object.tags.includes(Tags.Goblin)) {
       this.sprite.setAnimation("attack").then(() => {
         this.sprite.setAnimation("idle");
       });

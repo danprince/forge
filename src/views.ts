@@ -1,5 +1,5 @@
 import { panel, progress, TextLine, tooltip } from "./components";
-import { align, local, opacity, over, pointer, print, rectfill, resize, restore, save, screen, spr, SpriteId, sprr, translate, View } from "./engine";
+import { align, local, opacity, over, pointer, print, rect, rectfill, resize, restore, save, screen, spr, SpriteId, sprr, translate, View } from "./engine";
 import { GameObject, ShopItem, Upgrade } from "./game";
 import { PackMule } from "./upgrades";
 
@@ -13,6 +13,7 @@ export class UI extends View {
   viewport: ViewportView;
   shop: ShopView;
   upgrades: UpgradeView;
+  raidTimer: RaidTimerView;
   handlers: Handler[] = [];
 
   constructor(width: number, height: number) {
@@ -23,12 +24,17 @@ export class UI extends View {
     this.viewport = new ViewportView();
     this.shop = new ShopView();
     this.upgrades = new UpgradeView();
+    this.raidTimer = new RaidTimerView();
     this.shop.h = this.viewport.h;
     this.shop.x = this.viewport.x - this.shop.w - 5;
     this.shop.y = this.viewport.y;
     this.upgrades.x = this.viewport.x + this.viewport.w + 3;
     this.upgrades.y = this.viewport.y;
     this.upgrades.h = this.viewport.h;
+    this.raidTimer.w = this.viewport.w + 4;
+    this.raidTimer.h = 10;
+    this.raidTimer.x = this.viewport.x - 2;
+    this.raidTimer.y = this.viewport.y + this.viewport.h + 3;
   }
 
   private currentHandler(): Handler | undefined {
@@ -56,6 +62,7 @@ export class UI extends View {
     this.viewport._render();
     this.shop._render();
     this.upgrades._render();
+    this.raidTimer._render();
   }
 
   pointerToGridExact(): [x: number, y: number] {
@@ -153,6 +160,16 @@ export class ViewportView extends View {
       }
       restore();
     }
+  }
+}
+
+export class RaidTimerView extends View {
+  render() {
+    let value = game.eventTimer / game.nextEventTime;
+    panel("panel_grey", 0, 0, this.w, this.h);
+    progress(2, 2, this.w - 4, 6, value, "#27e2a1", "#3b3531");
+    align("center");
+    print("Next Raid", this.w / 2, 2, "white", "black");
   }
 }
 

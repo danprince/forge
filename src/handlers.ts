@@ -42,6 +42,7 @@ export class SwipeAndRotateHandler extends Handler {
       let isMouseOverObject = gx === object.x && gy === object.y;
 
       if (canRotate && !canMove && isMouseOverObject) {
+        game.changeEventTimer(1);
         return game.addAction(new Rotate(object));
       }
 
@@ -54,10 +55,12 @@ export class SwipeAndRotateHandler extends Handler {
         : deltaY < 0 ? "north" : "south";
 
       if (canMove && distance > threshold) {
+        game.changeEventTimer(1);
         return game.addAction(new Slide(object, direction));
       }
 
       if (canRotate && isMouseOverObject) {
+        game.changeEventTimer(1);
         return game.addAction(new Rotate(object));
       }
 

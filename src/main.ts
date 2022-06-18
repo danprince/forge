@@ -2,11 +2,12 @@ import "./style.css";
 import { Game, Material } from "./game";
 import { UI } from "./views";
 import { init, shuffled } from "./engine";
-import { Ore, Sword } from "./crafting";
+import { Bar, Gold, Iron, Ore, Sword } from "./crafting";
 import { SwipeAndRotateHandler } from "./handlers";
-import { Anvil, Bucket, Furnace, Mule, Warrior } from "./objects";
+import { Anvil, Bucket, Furnace, Goblin, GoblinBrute, GoblinLooter, GoblinShaman, GoblinTotem, Mule, Warrior } from "./objects";
 import "./crafting";
 import { SpawnOre } from "./actions";
+import { GoblinRaid } from "./events";
 
 declare global {
   const game: Game;
@@ -18,12 +19,22 @@ declare global {
 
 game.addRecipe(Sword);
 game.addAction(new SpawnOre());
+game.addEventToPool(GoblinRaid);
 
 //            Sprite           Coins  Swords   Create
 game.shop.add("pack_mule",     50,     0,      () => new Mule());
 game.shop.add("furnace",       20,     0,      () => new Furnace());
 game.shop.add("anvil",         20,     0,      () => new Anvil());
 game.shop.add("warrior",       10,     1,      () => new Warrior());
+game.shop.add("goblin",         0,     0,      () => new Goblin());
+game.shop.add("shaman_1",       0,     0,      () => new GoblinShaman());
+game.shop.add("brute_1",        0,     0,      () => new GoblinBrute());
+game.shop.add("looter_1",       0,     0,      () => new GoblinLooter());
+game.shop.add("goblin_totem",   0,     0,      () => new GoblinTotem());
+game.shop.add("bar_gold",       0,     0,      () => Material.of(Gold, Bar)!);
+game.shop.add("bar_iron",       0,     0,      () => Material.of(Iron, Bar)!);
+game.shop.add("ore_gold",       0,     0,      () => Material.of(Gold, Ore)!);
+game.shop.add("ore_iron",       0,     0,      () => Material.of(Iron, Ore)!);
 
 let cells = shuffled(game.cells);
 
@@ -53,6 +64,7 @@ for (let i = 0; i < 20; i++) {
   if (cell && ore) game.addObject(ore, cell.x, cell.y);
 }
 
+game.swords = 3;
 game.coins = 195;
 
 ui.pushHandler(new SwipeAndRotateHandler);

@@ -1,6 +1,8 @@
-import { atlas, SpriteId } from "./engine";
+import { atlas, randomElement, SpriteId } from "./engine";
 
 export type Direction = "north" | "east" | "south" | "west";
+export type Constructor<T> = { new(...args: any[]): T };
+export const DIRECTIONS: readonly Direction[] = ["north", "east", "south", "west"];
 
 let vectorsByDirection: Record<Direction, [x: number, y: number]> = {
   "north": [0, -1],
@@ -128,6 +130,11 @@ export interface Hitpoints {
   max: number;
 }
 
+export enum Tags {
+  Dwarf = "dwarf",
+  Goblin = "goblin"
+}
+
 export class GameObject {
   sprite: Sprite = undefined!;
   x: number = 0;
@@ -136,6 +143,7 @@ export class GameObject {
   name: string = "";
   description: string = "";
   hp?: Hitpoints;
+  tags: Tags[] = [];
 
   get direction(): Direction {
     switch (this.rotation % 4) {
@@ -290,6 +298,11 @@ export class Material extends GameObject {
       variant.spriteId,
       variant.set
     );
+  }
+
+  static of(element: Element, component: Component) {
+    let variants = Variant.query({ element, component });
+    return this.from(variants[0]);
   }
 
   canBeMoved(): boolean {
@@ -518,6 +531,12 @@ export abstract class Upgrade {
   apply() {}
 }
 
+export abstract class Event {
+  start() {}
+  stop() {}
+  update(dt: number) {}
+}
+
 export class Game {
   cells: Cell[] = [];
   coins: number = 0;
@@ -529,12 +548,45 @@ export class Game {
   upgrades: Upgrade[] = [];
   nextUpgradeCost: number = 100;
 
+  event: Event | undefined;
+  nextEventTime: number = 100;
+  eventTimer: number = 0;
+  private eventPool: Constructor<Event>[] = [];
+
   constructor(readonly columns: number, readonly rows: number) {
     for (let y = 0; y < this.rows; y++) {
       for (let x = 0; x < this.columns; x++) {
         this.cells[x + y * this.columns] = new Cell(x, y);
       }
     }
+  }
+
+  addEventToPool(eventType: Constructor<Event>) {
+    this.eventPool.push(eventType);
+  }
+
+  changeEventTimer(amount: number) {
+    // Ignore event timer during events
+    if (this.event) return;
+
+    this.eventTimer += amount;
+
+    if (this.eventTimer >= this.nextEventTime) {
+      let constructor = randomElement(this.eventPool);
+      let event = new constructor();
+      this.startEvent(event);
+    }
+  }
+
+  startEvent(event: Event) {
+    this.event = event;
+    this.eventTimer = 0;
+    this.event.start();
+  }
+
+  stopEvent() {
+    this.event?.stop();
+    this.event = undefined;
   }
 
   addUpgrade(upgrade: Upgrade) {
@@ -657,6 +709,10 @@ export class Game {
   }
 
   update(dt: number) {
+    if (this.event) {
+      this.event.update(dt);
+    }
+
     for (let action of this.actions) {
       action.update(dt);
 

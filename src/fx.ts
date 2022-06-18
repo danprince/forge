@@ -81,3 +81,23 @@ export function createBloodEmitter(x: number, y: number) {
     ],
   });
 }
+
+export function createHealthEmitter(x: number, y: number) {
+  return new Emitter(x - 2.5, y, {
+    w: 5,
+    h: 2,
+    frequency: 0.6,
+    initialSpeed: 10,
+    initialSpeedSpread: 5,
+    initialAngle: 0,
+    initialAngleSpread: 1,
+    initialLife: 800,
+    initialLifeSpread: 400,
+    gravity: -10,
+    variants: [
+      ["p_heal", "p_heal_2"],
+      ["p_heal"],
+      ["p_heal_2"],
+    ],
+  });
+}

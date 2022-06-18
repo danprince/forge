@@ -1,6 +1,6 @@
 import { Ore } from "./crafting";
-import { assert, tween } from "./engine";
-import { createBloodEmitter } from "./fx";
+import { assert, sleep, tween } from "./engine";
+import { createBloodEmitter, createHealthEmitter } from "./fx";
 import { Action, Direction, directionToVector, GameObject, Material } from "./game";
 import { Goblin } from "./objects";
 
@@ -128,9 +128,22 @@ export class Damage extends Action {
   }
 
   run() {
+    game.addAction(new ChangeHP(this.target, -this.amount));
+  }
+}
+
+export class ChangeHP extends Action {
+  constructor(
+    readonly target: GameObject,
+    readonly amount: number,
+  ) {
+    super();
+  }
+
+  run() {
     let { target, amount } = this;
     assert(target.hp, "Damage target does not have HP");
-    target.hp.current -= amount;
+    target.hp.current += amount;
     target.hp.current = Math.min(target.hp.current, target.hp.max);
     target.hp.current = Math.max(0, target.hp.current);
     if (target.hp.current === 0) {
@@ -153,5 +166,24 @@ export class Death extends Action {
     let fx = createBloodEmitter(dx, dy);
     fx.burst(30);
     fx.stopThenRemove();
+  }
+}
+
+export class Heal extends Action {
+  constructor(
+    readonly target: GameObject,
+    readonly amount: number
+  ) {
+    super();
+  }
+
+  async run() {
+    let { target } = this;
+    let [dx, dy] = ui.viewport.gridToGlobal(target.x + 0.5, target.y + 0.3);
+    let emitter = createHealthEmitter(dx, dy);
+    emitter.start();
+    await sleep(300);
+    emitter.stopThenRemove();
+    game.addAction(new ChangeHP(this.target, this.amount));
   }
 }
