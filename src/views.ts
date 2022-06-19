@@ -62,11 +62,11 @@ export class ViewportView extends View {
 
   constructor() {
     super();
-    let [w, h] = screen();
+    let [w] = screen();
     this.w = game.columns * this.tileSize;
     this.h = game.rows * this.tileSize;
     this.x = Math.floor(w / 2 - this.w / 2);
-    this.y = Math.floor(h / 2 - this.h / 2);
+    this.y = 3;
   }
 
   localToGrid(x: number, y: number): [x: number, y: number] {
@@ -117,9 +117,9 @@ export class ViewportView extends View {
         object.description,
         object.canBeRotated() && `\x03 to \x01`,
         object.canBeMoved() && `\x04 to \x02`,
-      ].filter(x => x).join(" ");
+      ];
 
-      tooltip(this.w / 2, this.h + 2, [["#7b7471", msg]], "center");
+      tooltip(this.w / 2, this.h + 2, msg, "center");
     }
   }
 
@@ -171,9 +171,8 @@ export class RaidTimerView extends View {
     let value = game.event ? 1 : game.eventTimer / game.nextEventTime;
     panel("panel_frame_brown", 0, 0, this.w, this.h);
     align("center");
-    //progress(2, 2, this.w - 4, 6, value, "#27e2a1", "#3b3531");
     rectfill(2, 2, this.w - 4, this.h - 4, "#3b3531");
-    panel("progress_green", 2, 2, (this.w - 4) * value, this.h - 4);
+    panel("progress_purple", 2, 2, (this.w - 4) * value, this.h - 4);
 
     if (game.event) {
       print(game.event.name, this.w / 2, 4, "white", "black");

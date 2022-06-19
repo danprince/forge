@@ -1,4 +1,4 @@
-import { align, atlas, color, cursor, Fill, measure, over, pointer, print, rectfill, restore, save, SpriteId, sspr, global, renderAbove, TextAlign } from "./engine";
+import { align, atlas, color, cursor, Fill, measure, over, pointer, print, rectfill, restore, save, SpriteId, sspr, global, renderAbove, TextAlign, translate, spr } from "./engine";
 
 /**
  * Draws a panel from a 9-slice sprite, where each slice is 3x3.
@@ -128,4 +128,41 @@ export function button(x: number, y: number, label: string, align: TextAlign = "
   print(label, x + p, y + p, "white", "black");
 
   return hover && pointer.released;
+}
+
+export function dialogue(characterSprite: SpriteId, side: "left" | "right", lines: TextLine[]) {
+  let [w, h] = measureLines(lines);
+
+  save();
+  translate(ui.viewport.x, ui.viewport.y + ui.viewport.h);
+
+  let portrait = atlas[characterSprite];
+  let padding = 4;
+  let bubbleWidth = w + padding * 2;
+  let bubbleHeight = h + padding * 2 - 1;
+  let bubbleX = side === "left"
+    ? portrait.w - 6
+    : ui.viewport.w - bubbleWidth - portrait.w + 8;
+  let bubbleY = -bubbleHeight;
+  let backdropHeight = 18;
+  let backdropWidth = ui.viewport.w;
+  let backdropColor = "rgba(0, 0, 0, 0.5)";
+  let portraitX = side === "left" ? 0 : backdropWidth - portrait.w;
+  let portraitY = -portrait.h;
+  let bubbleArrowX = side == "left" ? bubbleX - 2 : bubbleX + bubbleWidth - 1;
+  let bubbleArrowY = -11;
+
+  rectfill(0, -backdropHeight, backdropWidth, backdropHeight, backdropColor);
+  spr(characterSprite, portraitX, portraitY);
+  panel("panel_white", bubbleX, bubbleY, bubbleWidth, bubbleHeight);
+  spr(`speech_bubble_arrow_${side}`, bubbleArrowX, bubbleArrowY);
+  cursor(bubbleX + padding, bubbleY + padding);
+
+  for (let line of lines) {
+    let fill = typeof line === "string" ? "#584336" : line[0];
+    let text = typeof line === "string" ? line : line[1];
+    color(fill);
+    print(text)
+  }
+  restore();
 }
