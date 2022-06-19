@@ -89,7 +89,7 @@ export class SpawnOre extends Action {
     let cells = this.getPotentialCells();
     let cell = cells[Math.floor(Math.random() * cells.length)];
 
-    if (Math.random() <= this.goblinChance) {
+    if (game.event == null && Math.random() <= this.goblinChance) {
       object = new Goblin();
     }
 
