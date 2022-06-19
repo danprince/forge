@@ -1,7 +1,6 @@
 import { panel, progress, TextLine, tooltip } from "./components";
-import { align, local, opacity, over, pointer, print, rectfill, resize, restore, save, screen, spr, SpriteId, sprr, translate, View } from "./engine";
-import { GameObject, ShopItem, Upgrade } from "./game";
-import { PackMule } from "./upgrades";
+import { align, local, opacity, over, pointer, print, resize, restore, save, screen, spr, SpriteId, sprr, translate, View } from "./engine";
+import { GameObject, ShopItem } from "./game";
 
 export class UIWindow {
   update(dt: number) {}
@@ -338,57 +337,6 @@ export class ShopGridView extends View {
       let offsetX = localPointerX - localSpriteX;
       let offsetY = localPointerY - localSpriteY;
       this.onPickupItem(item, offsetX, offsetY);
-    }
-  }
-}
-
-export class UpgradeView extends View {
-  constructor() {
-    super();
-    this.w = 20;
-  }
-
-  render(): void {
-    this.renderUpgradeButton();
-
-    for (let i = 0; i < game.upgrades.length; i++) {
-      this.renderUpgradeSlot(i + 1, game.upgrades[i]);
-    }
-  }
-
-  renderUpgradeSlot(index: number, upgrade: Upgrade) {
-    let x = 0;
-    let y = index * 20;
-    panel("panel_grey_round", x, y, 19, 19)
-    spr(upgrade.sprite, x + 2, y + 2);
-    let hover = over(x, y, 20, 20);
-
-    if (hover) {
-      tooltip(-4, y, [
-        upgrade.name,
-        upgrade.description,
-      ], "right");
-    }
-  }
-
-  renderUpgradeButton() {
-    let canAfford = game.coins >= game.nextUpgradeCost;
-    let hover = over(0, 0, 19, 19);
-    panel(hover ? "panel_grey_round_hover" : "panel_grey_round", 0, 0, 19, 19)
-    spr(canAfford ? "upgrade_hammers_ready" : "upgrade_hammers", 1, 2);
-    rectfill(2, 14, 15, 3, "#3b3531");
-    progress(3, 15, 13, 1, game.coins / game.nextUpgradeCost, "#ff9e19", "#713400");
-
-    if (hover) {
-      tooltip(-4, 0, [
-        "Buy Upgrade",
-        `\x06${game.nextUpgradeCost}`
-      ], "right");
-    }
-
-    if (hover && pointer.pressed && canAfford) {
-      game.coins -= game.nextUpgradeCost;
-      game.addUpgrade(new PackMule());
     }
   }
 }

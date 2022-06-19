@@ -170,7 +170,7 @@ export class Mule extends GameObject {
     "idle": {
       speed: 400,
       loop: true,
-      frames: ["pack_mule", "pack_mule_2"],
+      frames: ["mule_idle_2", "mule_idle_2"],
     },
   }, "idle");
 
@@ -221,7 +221,7 @@ export class Goblin extends GameObject {
     "idle": {
       speed: 400,
       loop: true,
-      frames: ["goblin", "goblin_2"],
+      frames: ["goblin_runt_idle_1", "goblin_runt_idle_2"],
     },
   }, "idle");
 
@@ -258,7 +258,7 @@ export class GoblinBrute extends GameObject {
     "idle": {
       speed: 400,
       loop: true,
-      frames: ["brute_1", "brute_2"],
+      frames: ["goblin_brute_idle_1", "goblin_brute_idle_2"],
     },
   }, "idle");
 
@@ -299,7 +299,7 @@ export class GoblinLooter extends GameObject {
     "idle": {
       speed: 400,
       loop: true,
-      frames: ["looter_1", "looter_2"],
+      frames: ["goblin_looter_idle_1", "goblin_looter_idle_2"],
     },
   }, "idle");
 }
@@ -314,7 +314,7 @@ export class GoblinShaman extends GameObject {
     "idle": {
       speed: 400,
       loop: true,
-      frames: ["shaman_1", "shaman_2"],
+      frames: ["goblin_shaman_idle_1", "goblin_shaman_idle_2"],
     },
   }, "idle");
 
@@ -395,11 +395,11 @@ export class Healer extends GameObject {
     "idle": {
       speed: 400,
       loop: true,
-      frames: ["healer_1", "healer_2"],
+      frames: ["dwarf_healer_idle_1", "dwarf_healer_idle_2"],
     },
     "heal": {
       speed: 500,
-      "frames": ["healer_heal"],
+      "frames": ["dwarf_healer_heal"],
     },
   }, "idle");
 
@@ -442,11 +442,11 @@ export class Warrior extends GameObject {
     "idle": {
       speed: 400,
       loop: true,
-      frames: ["warrior", "warrior_2"],
+      frames: ["dwarf_warrior_idle_1", "dwarf_warrior_idle_2"],
     },
     "attack": {
       speed: 75,
-      frames: ["warrior_attack_1", "warrior_attack_2", "warrior_attack_3"],
+      frames: ["dwarf_warrior_attack_1", "dwarf_warrior_attack_2", "dwarf_warrior_attack_3"],
     },
   }, "idle");
 
@@ -520,7 +520,7 @@ export class Automaton extends GameObject {
     idle: {
       loop: true,
       speed: 400,
-      frames: ["automaton_1", "automaton_2"],
+      frames: ["automaton_idle_1", "automaton_idle_2"],
     },
   }, "idle");
 
