@@ -1,4 +1,4 @@
-import { panel, TextLine, tooltip } from "./widgets";
+import { panel, tooltip } from "./widgets";
 import { align, local, opacity, over, pointer, print, rectfill, resize, restore, save, screen, spr, SpriteId, sprr, translate, View } from "./engine";
 import { GameObject, ShopItem } from "./game";
 import { hasStorage } from "./components";
@@ -112,14 +112,11 @@ export class ViewportView extends View {
     let object = game.getObject(px, py);
 
     if (object) {
-      let msg = [
-        `${object.name}:`,
-        object.description,
-        object.canBeRotated() && `\x03 to \x01`,
-        object.canBeMoved() && `\x04 to \x02`,
-      ];
-
-      tooltip(this.w / 2, this.h + 2, msg, "center");
+      tooltip(this.w / 2, this.h + 2, [
+        object.description && ["#fff", object.description],
+        object.canBeRotated() && ["#666", "\x03Tap to rotate"],
+        object.canBeMoved() && ["#666", "\x04Drag to move"],
+      ], "center");
     }
   }
 
@@ -204,9 +201,9 @@ export class CurrencyView extends View {
     panel("panel_frame_brown", -2, -2, this.w + 4, this.h + 4);
     save();
     let w = Math.floor(this.w / 2);
-    this.currency(0, 0, w, this.h, "icon_coins", game.coins, ["Coins"]);
+    this.currency(0, 0, w, this.h, "icon_coins", game.coins);
     translate(w + 1, 0);
-    this.currency(0, 0, w, this.h, "icon_sword", game.swords, ["Swords"]);
+    this.currency(0, 0, w, this.h, "icon_sword", game.swords);
     restore();
   }
 
@@ -217,18 +214,14 @@ export class CurrencyView extends View {
     h: number,
     icon: SpriteId,
     amount: number,
-    tooltipLines: TextLine[]
   ) {
     save();
     translate(x, y);
-    let hover = panel("panel_grey", 0, 0, w, h);
+    panel("panel_grey", 0, 0, w, h);
     spr(icon, 2, 2);
     align("right");
     print(amount.toString(), w - 2, 3, "white", "black");
     restore();
-    if (hover) {
-      tooltip(x, y - h, tooltipLines);
-    }
   }
 }
 
@@ -363,7 +356,7 @@ export class ShopGridView extends View {
 
       tooltip(dx + dw, dy, [
         [disabled ? "#931200" : "white", item._reference.name],
-        item._reference.description,
+        item._reference.description && ["#aaa", item._reference.description],
         [disabled ? "#931200" : "#ff9e19", costs.join(" ")],
       ]);
     }
