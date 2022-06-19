@@ -82,6 +82,10 @@ export class Redirector extends GameObject implements Logic {
   description = "Redirect automatons";
   sprite = new Sprite("logic_redirector");
 
+  canBeMoved(): boolean {
+    return true;
+  }
+
   canAccept(object: GameObject): object is Automaton {
     return object instanceof Automaton;
   }
@@ -99,19 +103,22 @@ export class Waiter extends GameObject implements Logic {
   name = "Waiter";
   description = "Automatons wait until full";
   sprite = new Sprite("logic_waiter");
-  exitDirection: Direction = "north";
+
+  canBeMoved(): boolean {
+    return true;
+  }
+
+  canBeRotated() {
+    return true;
+  }
 
   canAccept(object: GameObject): object is Automaton {
     return object instanceof Automaton;
   }
 
-  onAccept(object: GameObject, direction: Direction): void {
-    this.exitDirection = direction;
-  }
-
   logic(automaton: Automaton) {
     if (automaton.container.isFull()) {
-      game.addAction(new Slide(automaton, this.exitDirection));
+      game.addAction(new Slide(automaton, this.direction));
     }
   }
 }
@@ -121,7 +128,14 @@ export class Emptier extends GameObject implements Logic {
   description = "Automatons empty";
   sprite = new Sprite("logic_emptier");
   exitDirection: Direction = "north";
-  outputDirection: Direction = "west";
+
+  canBeMoved(): boolean {
+    return true;
+  }
+
+  canBeRotated() {
+    return true;
+  }
 
   canAccept(object: GameObject): object is Automaton {
     return object instanceof Automaton;
@@ -132,8 +146,8 @@ export class Emptier extends GameObject implements Logic {
   }
 
   canOutput(output: GameObject): boolean {
-    let cell = game.getCellInDirection(this.x, this.y, this.outputDirection);
-    return cell != null && cell.canAccept(output, this.outputDirection);
+    let cell = game.getCellInDirection(this.x, this.y, this.direction);
+    return cell != null && cell.canAccept(output, this.direction);
   }
 
   logic(automaton: Automaton) {
@@ -147,7 +161,7 @@ export class Emptier extends GameObject implements Logic {
     if (this.canOutput(material)) {
       automaton.container.pop()!;
       game.addObject(material, this.x, this.y);
-      game.addAction(new Slide(material, this.outputDirection));
+      game.addAction(new Slide(material, this.direction));
     }
   }
 }
@@ -158,6 +172,10 @@ export class Filter extends GameObject implements Logic {
   sprite = new Sprite("logic_filter");
   component = Bar;
   element = Gold;
+
+  canBeMoved(): boolean {
+    return true;
+  }
 
   canAccept(object: GameObject): object is Automaton {
     return object instanceof Automaton;
@@ -186,6 +204,7 @@ export class Assembler extends GameObject implements Storage {
   name = "Assembler";
   description = "Creates automatons from gold bars";
   outputDirection: Direction = "north";
+
   container = new Container<Material>({
     capacity: 10,
     rule: (object: GameObject): object is Material => {
@@ -204,6 +223,10 @@ export class Assembler extends GameObject implements Storage {
       frames: ["assembler_1", "assembler_2", "assembler_3"],
     },
   }, "idle");
+
+  canBeMoved(): boolean {
+    return true;
+  }
 
   canAccept(object: GameObject): object is Material {
     return this.container.canStore(object);
