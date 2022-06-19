@@ -1,28 +1,37 @@
 import { panel, tooltip } from "./widgets";
-import { align, local, opacity, over, pointer, print, rectfill, resize, restore, save, screen, spr, SpriteId, sprr, translate, View } from "./engine";
+import { align, local, opacity, over, pointer, print, rectfill, resize, restore, save, screen, spr, SpriteId, sprr, translate } from "./engine";
 import { GameObject, ShopItem } from "./game";
 import { hasStorage } from "./components";
 
-export class UIWindow {
-  update(dt: number) {}
+export abstract class Panel {
+  x: number = 0;
+  y: number = 0;
+  w: number = 0;
+  h: number = 0;
+
+  render() {
+    save();
+    translate(this.x, this.y);
+    this.renderPanel();
+    restore();
+  }
+
+  abstract renderPanel(): void;
 }
 
-export class UI extends View {
-  viewport: ViewportView;
-  shop: ShopView;
-  raidTimer: RaidTimerView;
-  currency: CurrencyView;
+export class UI {
+  viewport: ViewportPanel;
+  shop: ShopPanel;
+  raidTimer: RaidTimerPanel;
+  currency: CurrencyPanel;
   handler(dt: number): void {}
 
   constructor(width: number, height: number) {
-    super();
     resize(width, height);
-    this.w = width;
-    this.h = height;
-    this.viewport = new ViewportView();
-    this.currency = new CurrencyView();
-    this.shop = new ShopView();
-    this.raidTimer = new RaidTimerView();
+    this.viewport = new ViewportPanel();
+    this.currency = new CurrencyPanel();
+    this.shop = new ShopPanel();
+    this.raidTimer = new RaidTimerPanel();
     this.currency.w = this.shop.w;
     this.currency.x = this.viewport.x - this.currency.w - 5;
     this.currency.y = this.viewport.y;
@@ -35,16 +44,17 @@ export class UI extends View {
     this.raidTimer.h = 13;
   }
 
-  update(dt: number): void {
+  update = (dt: number) => {
     this.handler(dt);
     game.update(dt);
+    this.render();
   }
 
   render() {
-    this.viewport._render();
-    this.currency._render();
-    this.shop._render();
-    this.raidTimer._render();
+    this.viewport.render();
+    this.currency.render();
+    this.shop.render();
+    this.raidTimer.render();
   }
 
   pointerToGridExact(): [x: number, y: number] {
@@ -57,7 +67,7 @@ export class UI extends View {
   }
 }
 
-export class ViewportView extends View {
+export class ViewportPanel extends Panel {
   tileSize = 15;
 
   constructor() {
@@ -86,7 +96,7 @@ export class ViewportView extends View {
     return [lx + this.x, ly + this.y];
   }
 
-  render() {
+  renderPanel() {
     let ts = this.tileSize;
 
     for (let y = 0; y < game.rows; y++) {
@@ -162,9 +172,10 @@ export class ViewportView extends View {
   }
 }
 
-export class RaidTimerView extends View {
+export class RaidTimerPanel extends Panel {
   h = 10;
-  render() {
+
+  renderPanel() {
     let value = game.event ? 1 : game.eventTimer / game.nextEventTime;
     panel("panel_frame_brown", 0, 0, this.w, this.h);
     align("center");
@@ -192,12 +203,13 @@ export interface Placement {
   onCanceled(): void;
 }
 
-export class CurrencyView extends View {
+export class CurrencyPanel extends Panel {
   constructor() {
     super();
     this.h = 12;
   }
-  render() {
+
+  renderPanel() {
     panel("panel_frame_brown", -2, -2, this.w + 4, this.h + 4);
     save();
     let w = Math.floor(this.w / 2);
@@ -225,8 +237,8 @@ export class CurrencyView extends View {
   }
 }
 
-export class ShopView extends View {
-  grid = new ShopGridView(3, 6);
+export class ShopPanel extends Panel {
+  grid = new ShopGridPanel(3, 6);
   placement: Placement | undefined;
 
   constructor() {
@@ -254,9 +266,9 @@ export class ShopView extends View {
     };
   }
 
-  render() {
+  renderPanel() {
     panel("panel_frame_brown", -2, -2, this.w + 4, this.h + 4);
-    this.grid._render();
+    this.grid.render();
     this.renderPlacement();
   }
 
@@ -296,7 +308,7 @@ export class ShopView extends View {
 
 }
 
-export class ShopGridView extends View {
+export class ShopGridPanel extends Panel {
   private cellWidth = 20;
   private cellHeight = 20;
 
@@ -318,7 +330,7 @@ export class ShopGridView extends View {
     offsetY: number,
   ) {}
 
-  render() {
+  renderPanel() {
     for (let y = 0; y < this.rows; y++) {
       for (let x = 0; x < this.columns; x++) {
         let i = x + y * this.columns;

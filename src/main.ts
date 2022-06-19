@@ -75,4 +75,4 @@ game.swords = 3;
 game.coins = 999;
 
 ui.handler = swipeAndRotateHandler;
-init(ui);
+init(ui.update);

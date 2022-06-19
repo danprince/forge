@@ -445,39 +445,6 @@ function _resize(event: UIEvent) {
 }
 
 /**
- * ---------------------- Views -------------------------
- */
-
-let _root: View;
-let _renderAboveQueue: Array<() => void> = [];
-
-export class View {
-  x: number = 0;
-  y: number = 0;
-  w: number = 0;
-  h: number = 0;
-
-  update(dt: number) {}
-
-  _render() {
-    save();
-    translate(this.x, this.y);
-    this.render();
-    restore();
-  }
-
-  render() {}
-}
-
-/**
- * Defer a callback until after the main rendering pass has finished.
- * Useful for rendering stuff above everything else (e.g. tooltips).
- */
-export function renderAbove(callback: () => void) {
-  _renderAboveQueue.push(callback);
-}
-
-/**
  * ---------------------- Particles -------------------------
  */
 
@@ -743,6 +710,17 @@ function _updateTweens(dt: number) {
  * ---------------------- Lifecycle -------------------------
  */
 
+let _updateRoot: (dt: number) => void;
+let _renderAboveQueue: Array<() => void> = [];
+
+/**
+ * Defer a callback until after the main rendering pass has finished.
+ * Useful for rendering stuff above everything else (e.g. tooltips).
+ */
+export function renderAbove(callback: () => void) {
+  _renderAboveQueue.push(callback);
+}
+
 /**
  * Start an animation loop and call `callback` every iteration with the
  * number of milliseconds since the last call.
@@ -764,9 +742,8 @@ function _loop(callback: (dt: number) => void) {
 function _update(dt: number) {
   clear();
 
-  if (_root) {
-    _root.update(dt);
-    _root._render();
+  if (_updateRoot) {
+    _updateRoot(dt);
   }
 
   let callbacks = _renderAboveQueue;
@@ -785,6 +762,7 @@ function _update(dt: number) {
 
   // Reset frame state for pointer
   pointer.pressed = pointer.released = false;
+
   // Reset frame state for keyboard
   keyboard.pressed.clear();
   keyboard.released.clear();
@@ -803,10 +781,10 @@ function _load() {
 /**
  * Wait for assets to load and setup the DOM.
  */
-export async function init(view: View) {
+export async function init(update: (dt: number) => void) {
   await _load();
+  _updateRoot = update;
   _loop(_update);
-  _root = view;
   window.addEventListener("keydown", _keydown);
   window.addEventListener("keyup", _keyup);
   window.addEventListener("pointermove", _pointermove);
