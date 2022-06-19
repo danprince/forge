@@ -66,7 +66,7 @@ export function swipeAndRotateHandler() {
     object.sync();
   }
 
-  else if (action) {
+  else if (action?.object.canBeMoved()) {
     let { object, offset, origin } = action;
 
     // Find the dominant movement axis
