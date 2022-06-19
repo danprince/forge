@@ -312,6 +312,14 @@ export class Material extends GameObject {
     return this.from(variants[0]);
   }
 
+  isEqual(material: Material): boolean {
+    return (
+      this.component === material.component &&
+      this.element === material.element &&
+      this.set === material.set
+    );
+  }
+
   canBeMoved(): boolean {
     return this.component.moves;
   }

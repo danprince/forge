@@ -1,6 +1,7 @@
-import { panel, progress, TextLine, tooltip } from "./components";
+import { panel, progress, TextLine, tooltip } from "./widgets";
 import { align, local, opacity, over, pointer, print, resize, restore, save, screen, spr, SpriteId, sprr, translate, View } from "./engine";
 import { GameObject, ShopItem } from "./game";
+import { hasStorage } from "./components";
 
 export class UIWindow {
   update(dt: number) {}
@@ -133,6 +134,26 @@ export class ViewportView extends View {
         spr(empty ? "health_pip_empty" : "health_pip", i * 4, 0);
       }
       restore();
+    }
+
+    if (hasStorage(object)) {
+      let { container } = object;
+      let item = container.peek();
+      if (item == null) return;
+      let { w, h } = item.sprite;
+      let { x, y } = object.sprite;
+      let hover = over(x, y, w, h);
+      if (hover) {
+        save();
+        translate(object.sprite.x, object.sprite.y - h);
+        panel("panel_black", 0, 0, w, h);
+        spr(item.sprite.name, 0, 0);
+        align("right");
+        let full = container.isFull();
+        let color = full ? "red" : "white";
+        print(`${container.objects.length}`, w, h - 6, color, "black");
+        restore();
+      }
     }
   }
 }
