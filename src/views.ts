@@ -1,5 +1,5 @@
-import { panel, progress, TextLine, tooltip } from "./widgets";
-import { align, local, opacity, over, pointer, print, resize, restore, save, screen, spr, SpriteId, sprr, translate, View } from "./engine";
+import { panel, TextLine, tooltip } from "./widgets";
+import { align, local, opacity, over, pointer, print, rectfill, resize, restore, save, screen, spr, SpriteId, sprr, translate, View } from "./engine";
 import { GameObject, ShopItem } from "./game";
 import { hasStorage } from "./components";
 
@@ -11,6 +11,7 @@ export class UI extends View {
   viewport: ViewportView;
   shop: ShopView;
   raidTimer: RaidTimerView;
+  currency: CurrencyView;
   handler(dt: number): void {}
 
   constructor(width: number, height: number) {
@@ -19,14 +20,19 @@ export class UI extends View {
     this.w = width;
     this.h = height;
     this.viewport = new ViewportView();
+    this.currency = new CurrencyView();
     this.shop = new ShopView();
     this.raidTimer = new RaidTimerView();
-    this.shop.h = this.viewport.h;
+    this.currency.w = this.shop.w;
+    this.currency.x = this.viewport.x - this.currency.w - 5;
+    this.currency.y = this.viewport.y;
+    this.shop.h = this.viewport.h - this.raidTimer.h - this.currency.h - 9;
     this.shop.x = this.viewport.x - this.shop.w - 5;
-    this.shop.y = this.viewport.y;
-    this.raidTimer.w = this.viewport.w + 4;
-    this.raidTimer.x = this.viewport.x - 2;
-    this.raidTimer.y = this.viewport.y - this.raidTimer.h - 3;
+    this.shop.y = this.viewport.y + this.currency.h + 5;
+    this.raidTimer.w = this.shop.w + 4;
+    this.raidTimer.x = this.shop.x - 2;
+    this.raidTimer.y = this.shop.y + this.shop.h + 3;
+    this.raidTimer.h = 13;
   }
 
   update(dt: number): void {
@@ -36,6 +42,7 @@ export class UI extends View {
 
   render() {
     this.viewport._render();
+    this.currency._render();
     this.shop._render();
     this.raidTimer._render();
   }
@@ -131,7 +138,7 @@ export class ViewportView extends View {
       translate(-object.hp.max * 2, -2);
       for (let i = 0; i < object.hp.max; i++) {
         let empty = i >= object.hp.current;
-        spr(empty ? "health_pip_empty" : "health_pip", i * 4, 0);
+        spr(empty ? "shield_pip_empty" : "shield_pip_full", i * 4, 0);
       }
       restore();
     }
@@ -164,12 +171,14 @@ export class RaidTimerView extends View {
     let value = game.event ? 1 : game.eventTimer / game.nextEventTime;
     panel("panel_frame_brown", 0, 0, this.w, this.h);
     align("center");
-    progress(2, 2, this.w - 4, 6, value, "#27e2a1", "#3b3531");
+    //progress(2, 2, this.w - 4, 6, value, "#27e2a1", "#3b3531");
+    rectfill(2, 2, this.w - 4, this.h - 4, "#3b3531");
+    panel("progress_green", 2, 2, (this.w - 4) * value, this.h - 4);
 
     if (game.event) {
-      print(game.event.name, this.w / 2, 2, "white", "black");
+      print(game.event.name, this.w / 2, 4, "white", "black");
     } else {
-      print("Next Raid", this.w / 2, 2, "white", "black");
+      print("Next raid...", this.w / 2, 4, "white", "black");
     }
   }
 }
@@ -187,8 +196,45 @@ export interface Placement {
   onCanceled(): void;
 }
 
+export class CurrencyView extends View {
+  constructor() {
+    super();
+    this.h = 12;
+  }
+  render() {
+    panel("panel_frame_brown", -2, -2, this.w + 4, this.h + 4);
+    save();
+    let w = Math.floor(this.w / 2);
+    this.currency(0, 0, w, this.h, "icon_coins", game.coins, ["Coins"]);
+    translate(w + 1, 0);
+    this.currency(0, 0, w, this.h, "icon_sword", game.swords, ["Swords"]);
+    restore();
+  }
+
+  currency(
+    x: number,
+    y: number,
+    w: number,
+    h: number,
+    icon: SpriteId,
+    amount: number,
+    tooltipLines: TextLine[]
+  ) {
+    save();
+    translate(x, y);
+    let hover = panel("panel_grey", 0, 0, w, h);
+    spr(icon, 2, 2);
+    align("right");
+    print(amount.toString(), w - 2, 3, "white", "black");
+    restore();
+    if (hover) {
+      tooltip(x, y - h, tooltipLines);
+    }
+  }
+}
+
 export class ShopView extends View {
-  grid = new ShopGridView(3, 8);
+  grid = new ShopGridView(3, 6);
   placement: Placement | undefined;
 
   constructor() {
@@ -218,16 +264,6 @@ export class ShopView extends View {
 
   render() {
     panel("panel_frame_brown", -2, -2, this.w + 4, this.h + 4);
-
-    save();
-    let w = Math.floor(this.w / 2);
-    let h = 12;
-    this.currency(0, 0, w, h, "icon_coins", game.coins, ["Coins"]);
-    translate(w + 1, 0);
-    this.currency(0, 0, w, h, "icon_sword", game.swords, ["Swords"]);
-    restore();
-
-    this.grid.y = 13;
     this.grid._render();
     this.renderPlacement();
   }
@@ -266,26 +302,6 @@ export class ShopView extends View {
     }
   }
 
-  currency(
-    x: number,
-    y: number,
-    w: number,
-    h: number,
-    icon: SpriteId,
-    amount: number,
-    tooltipLines: TextLine[]
-  ) {
-    save();
-    translate(x, y);
-    let hover = panel("panel_grey", 0, 0, w, h);
-    spr(icon, 2, 2);
-    align("right");
-    print(amount.toString(), w - 2, 3, "white", "black");
-    restore();
-    if (hover) {
-      tooltip(x, y - h, tooltipLines);
-    }
-  }
 }
 
 export class ShopGridView extends View {
