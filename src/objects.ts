@@ -1,4 +1,4 @@
-import { Damage, Heal, Slide } from "./actions";
+import { ChangeHP, Damage, Heal, Slide } from "./actions";
 import { Bar, Ore, SwordBlade, SwordHandle, SwordTip } from "./crafting";
 import { randomElement, sleep } from "./engine";
 import { createCoinEmitter, createSmokeEmitter, createSparkEmitter } from "./fx";
@@ -47,24 +47,24 @@ export class Furnace extends GameObject {
     );
   }
 
-  canConsume(object: GameObject, direction: Direction): object is Material {
-    return (
-      object instanceof Material &&
-      object.component === Ore
-    );
-  }
+  //canConsume(object: GameObject, direction: Direction): object is Material {
+  //  return (
+  //    object instanceof Material &&
+  //    object.component === Ore
+  //  );
+  //}
 
-  onConsume(ore: Material, direction: Direction): void {
-    game.removeObject(ore);
-    let bar = this.createOutput(ore);
+  //onConsume(ore: Material, direction: Direction): void {
+  //  game.removeObject(ore);
+  //  let bar = this.createOutput(ore);
 
-    if (bar) {
-      game.addObject(bar, this.x, this.y);
-      game.addAction(new Slide(this, direction));
-    }
+  //  if (bar) {
+  //    game.addObject(bar, this.x, this.y);
+  //    game.addAction(new Slide(this, direction));
+  //  }
 
-    this.emitSmoke();
-  }
+  //  this.emitSmoke();
+  //}
 
   onAccept(ore: Material, direction: Direction): void {
     let bar = this.createOutput(ore);
@@ -121,28 +121,28 @@ export class Anvil extends GameObject {
     );
   }
 
-  canConsume(object: GameObject, direction: Direction): object is Material {
-    return (
-      object instanceof Material &&
-      object.component === Bar
-    );
-  }
+  //canConsume(object: GameObject, direction: Direction): object is Material {
+  //  return (
+  //    object instanceof Material &&
+  //    object.component === Bar
+  //  );
+  //}
 
-  onConsume(bar: Material, direction: Direction): void {
-    let output = this.createOutput(bar);
-    game.removeObject(bar);
+  //onConsume(bar: Material, direction: Direction): void {
+  //  let output = this.createOutput(bar);
+  //  game.removeObject(bar);
 
-    if (output) {
-      if (output.canBeRotated()) {
-        output.rotation = directionToRotation(direction);
-      }
+  //  if (output) {
+  //    if (output.canBeRotated()) {
+  //      output.rotation = directionToRotation(direction);
+  //    }
 
-      game.addObject(output, this.x, this.y);
-      game.addAction(new Slide(this, direction));
-    }
+  //    game.addObject(output, this.x, this.y);
+  //    game.addAction(new Slide(this, direction));
+  //  }
 
-    this.emitSparks();
-  }
+  //  this.emitSparks();
+  //}
 
   onAccept(bar: Material, direction: Direction): void {
     game.removeObject(bar);
@@ -461,6 +461,18 @@ export class Warrior extends GameObject {
 
   canBeMoved(): boolean {
     return true;
+  }
+
+  canAccept(object: GameObject): object is Material {
+    return (
+      object instanceof Material &&
+      object.component === Bar
+    );
+  }
+
+  onAccept(object: GameObject): void {
+    game.removeObject(object);
+    game.addAction(new ChangeHP(this, +1));
   }
 
   onBump(object: GameObject): void {
