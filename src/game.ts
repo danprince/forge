@@ -54,6 +54,13 @@ export class Cell {
   isEmpty() {
     return this.objects.length === 0;
   }
+
+  canAccept(object: GameObject, direction: Direction) {
+    return (
+      this.isEmpty() ||
+      this.objects.some(target => target.canAccept(object, direction))
+    );
+  }
 }
 
 export interface Animation {
@@ -554,6 +561,9 @@ export class Game {
   eventTimer: number = 0;
   private eventPool: Constructor<Event>[] = [];
 
+  logicUpdateTimer: number = 0;
+  logicUpdateSpeed: number = 1_000;
+
   constructor(readonly columns: number, readonly rows: number) {
     for (let y = 0; y < this.rows; y++) {
       for (let x = 0; x < this.columns; x++) {
@@ -727,6 +737,27 @@ export class Game {
       for (let object of cell.objects) {
         object.update(dt);
         object.sprite.update(dt);
+      }
+    }
+
+    this.logicUpdateTimer += dt;
+
+    if (this.logicUpdateTimer >= this.logicUpdateSpeed) {
+      this.logicUpdateTimer = 0;
+
+      // TODO: Problem with cell-by-cell updates is we can update a single
+      // entity multiple times. This set tracks which ones were already
+      // updated this cycle.
+      let updated = new Set<GameObject>();
+
+      for (let cell of this.cells) {
+        for (let object of cell.objects) {
+          if ("logicUpdate" in object && !updated.has(object)) {
+            // @ts-ignore
+            object.logicUpdate();
+            updated.add(object);
+          }
+        }
       }
     }
   }

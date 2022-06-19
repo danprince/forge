@@ -3,18 +3,15 @@ import { align, local, opacity, over, pointer, print, rectfill, resize, restore,
 import { GameObject, ShopItem, Upgrade } from "./game";
 import { PackMule } from "./upgrades";
 
-export abstract class Handler {
-  start() {}
-  stop() {}
-  update(): void {};
+export class UIWindow {
+  update(dt: number) {}
 }
 
 export class UI extends View {
   viewport: ViewportView;
   shop: ShopView;
-  upgrades: UpgradeView;
   raidTimer: RaidTimerView;
-  handlers: Handler[] = [];
+  handler(dt: number): void {}
 
   constructor(width: number, height: number) {
     super();
@@ -23,44 +20,23 @@ export class UI extends View {
     this.h = height;
     this.viewport = new ViewportView();
     this.shop = new ShopView();
-    this.upgrades = new UpgradeView();
     this.raidTimer = new RaidTimerView();
     this.shop.h = this.viewport.h;
     this.shop.x = this.viewport.x - this.shop.w - 5;
     this.shop.y = this.viewport.y;
-    this.upgrades.x = this.viewport.x + this.viewport.w + 3;
-    this.upgrades.y = this.viewport.y;
-    this.upgrades.h = this.viewport.h;
     this.raidTimer.w = this.viewport.w + 4;
     this.raidTimer.x = this.viewport.x - 2;
     this.raidTimer.y = this.viewport.y - this.raidTimer.h - 3;
   }
 
-  private currentHandler(): Handler | undefined {
-    return this.handlers[this.handlers.length - 1];
-  }
-
-  pushHandler(handler: Handler) {
-    this.currentHandler()?.stop();
-    this.handlers.push(handler);
-    handler.start();
-  }
-
-  popHandler(handler: Handler) {
-    this.currentHandler()?.stop();
-    this.handlers.pop();
-    this.currentHandler()?.start();
-  }
-
   update(dt: number): void {
-    this.currentHandler()?.update();
+    this.handler(dt);
     game.update(dt);
   }
 
   render() {
     this.viewport._render();
     this.shop._render();
-    this.upgrades._render();
     this.raidTimer._render();
   }
 
@@ -192,7 +168,7 @@ export interface Placement {
 }
 
 export class ShopView extends View {
-  grid = new ShopGridView(3, 5);
+  grid = new ShopGridView(3, 8);
   placement: Placement | undefined;
 
   constructor() {

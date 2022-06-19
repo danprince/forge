@@ -1,5 +1,5 @@
 import { Damage, Heal, Slide } from "./actions";
-import { Bar, Ore, SwordBlade, SwordHandle, SwordTip } from "./crafting";
+import { Bar, Gold, Ore, SwordBlade, SwordHandle, SwordTip } from "./crafting";
 import { randomElement, sleep } from "./engine";
 import { createCoinEmitter, createSmokeEmitter, createSparkEmitter } from "./fx";
 import { AnimatedSprite, Direction, DIRECTIONS, directionToRotation, GameObject, Material, Sprite, Tags } from "./game";
@@ -13,16 +13,28 @@ export class Furnace extends GameObject {
     return true;
   }
 
-  isOutputClear(direction: Direction): boolean {
+  isOutputClear(material: Material, direction: Direction): boolean {
     let cell = game.getCellInDirection(this.x, this.y, direction);
-    return cell != null && cell.isEmpty();
+    let output = this.createOutput(material);
+    return (
+      cell != null &&
+      output != null &&
+      cell.canAccept(output, direction)
+    );
+  }
+
+  createOutput(material: Material): Material | undefined {
+    return Material.createByRarity({
+      component: Bar,
+      element: material.element,
+    });
   }
 
   canAccept(object: GameObject, direction: Direction): object is Material {
     return (
       object instanceof Material &&
       object.component === Ore &&
-      this.isOutputClear(direction)
+      this.isOutputClear(object, direction)
     );
   }
 
@@ -35,11 +47,7 @@ export class Furnace extends GameObject {
 
   onConsume(ore: Material, direction: Direction): void {
     game.removeObject(ore);
-
-    let bar = Material.createByRarity({
-      component: Bar,
-      element: ore.element,
-    });
+    let bar = this.createOutput(ore);
 
     if (bar) {
       game.addObject(bar, this.x, this.y);
@@ -50,12 +58,8 @@ export class Furnace extends GameObject {
   }
 
   onAccept(ore: Material, direction: Direction): void {
+    let bar = this.createOutput(ore);
     game.removeObject(ore);
-
-    let bar = Material.createByRarity({
-      component: Bar,
-      element: ore.element,
-    });
 
     if (bar) {
       game.addObject(bar, this.x, this.y);
@@ -83,16 +87,28 @@ export class Anvil extends GameObject {
     return true;
   }
 
-  isOutputClear(direction: Direction): boolean {
+  isOutputClear(material: Material, direction: Direction): boolean {
     let cell = game.getCellInDirection(this.x, this.y, direction);
-    return cell != null && cell.isEmpty();
+    let output = this.createOutput(material);
+    return (
+      cell != null &&
+      output != null &&
+      cell.canAccept(output, direction)
+    );
+  }
+
+  createOutput(material: Material): Material | undefined {
+    return Material.createByRarity({
+      component: [SwordTip, SwordBlade, SwordHandle],
+      element: material.element,
+    });
   }
 
   canAccept(object: GameObject, direction: Direction): object is Material {
     return (
       object instanceof Material &&
       object.component === Bar &&
-      this.isOutputClear(direction)
+      this.isOutputClear(object, direction)
     );
   }
 
@@ -104,12 +120,8 @@ export class Anvil extends GameObject {
   }
 
   onConsume(bar: Material, direction: Direction): void {
+    let output = this.createOutput(bar);
     game.removeObject(bar);
-
-    let output = Material.createByRarity({
-      component: [SwordTip, SwordBlade, SwordHandle],
-      element: bar.element,
-    });
 
     if (output) {
       if (output.canBeRotated()) {
@@ -126,10 +138,7 @@ export class Anvil extends GameObject {
   onAccept(bar: Material, direction: Direction): void {
     game.removeObject(bar);
 
-    let output = Material.createByRarity({
-      component: [SwordTip, SwordBlade, SwordHandle],
-      element: bar.element,
-    });
+    let output = this.createOutput(bar);
 
     if (output) {
       if (output.canBeRotated()) {
@@ -376,6 +385,53 @@ export class GoblinTotem extends GameObject {
   }
 }
 
+export class Healer extends GameObject {
+  name = "Healer";
+  description = "Heals dwarves";
+  speed = 5_000;
+  timer = this.speed;
+
+  sprite = new AnimatedSprite({
+    "idle": {
+      speed: 400,
+      loop: true,
+      frames: ["healer_1", "healer_2"],
+    },
+    "heal": {
+      speed: 500,
+      "frames": ["healer_heal"],
+    },
+  }, "idle");
+
+  update(dt: number) {
+    this.timer -= dt;
+
+    if (this.timer <= 0) {
+      this.timer = this.speed;
+      this.heal();
+    }
+  }
+
+  heal() {
+    for (let i = -1; i <= 1; i++) {
+      for (let j = -1; j <= 1; j++) {
+        let x = this.x + i;
+        let y = this.y + j;
+        let cell = game.getCell(x, y);
+        if (cell == null) continue;
+        this.sprite.setAnimation("heal")
+          .then(() => this.sprite.setAnimation("idle"));
+
+        for (let object of cell.objects) {
+          if (object.hp && object.tags.includes(Tags.Dwarf)) {
+            game.addAction(new Heal(object, 1));
+          }
+        }
+      }
+    }
+  }
+}
+
 export class Warrior extends GameObject {
   name = "Warrior";
   description = "Kills goblins";
@@ -420,6 +476,230 @@ export class Bucket extends GameObject {
   onBump(object: GameObject, direction: Direction): void {
     if (object.canBeMoved()) {
       game.addAction(new Slide(object, direction));
+    }
+  }
+}
+
+export class Assembler extends GameObject {
+  name = "Assembler";
+  description = "Turns gold bars into automatons";
+
+  sprite = new AnimatedSprite({
+    idle: {
+      loop: true,
+      speed: 100,
+      frames: ["assembler_1", "assembler_2", "assembler_3"],
+    },
+  }, "idle");
+
+  canAccept(object: GameObject, direction: Direction): object is Material {
+    let cell = game.getCellInDirection(this.x, this.y, direction);
+    return (
+      object instanceof Material &&
+      object.element === Gold &&
+      object.component === Bar &&
+      cell != null &&
+      cell.canAccept(new Automaton(), direction)
+    );
+  }
+
+  onAccept(object: GameObject, direction: Direction): void {
+    let automaton = new Automaton();
+    game.removeObject(object);
+    game.addObject(automaton, this.x, this.y);
+    game.addAction(new Slide(automaton, direction));
+  }
+}
+
+export class Automaton extends GameObject {
+  name = "Automaton";
+  storage: Material[] = [];
+  maxStorage = 8;
+
+  sprite = new AnimatedSprite({
+    idle: {
+      loop: true,
+      speed: 400,
+      frames: ["automaton_1", "automaton_2"],
+    },
+  }, "idle");
+
+  canBeMoved() {
+    return true;
+  }
+
+  canStore(material: Material): boolean {
+    return (
+      this.storage.length <= this.maxStorage &&
+      (material.component === Ore || material.component === Bar) &&
+      (this.storage.length === 0 || (
+        material.component === this.storage[0].component &&
+        material.element === this.storage[0].element
+      ))
+    );
+  }
+
+  peek(): Material | undefined {
+    return this.storage[this.storage.length - 1];
+  }
+
+  pop() {
+    return this.storage.pop();
+  }
+
+  isFull() {
+    return this.storage.length === this.maxStorage;
+  }
+
+  isEmpty() {
+    return this.storage.length === 0;
+  }
+
+  emitter = createSparkEmitter(0, 0);
+  speed = 800;
+  timer = 0;
+
+  update(dt: number) {
+    this.timer += dt;
+
+    if (this.timer >= this.speed) {
+      this.timer = 0;
+      let [gx, gy] = ui.viewport.gridToGlobal(this.x + 0.5, this.y + 0.5);
+      this.emitter.x = gx;
+      this.emitter.y = gy;
+      this.emitter.burst(2);
+    }
+  }
+
+  canAccept(object: GameObject, direction: Direction): object is Material {
+    return (
+      object instanceof Material &&
+      this.canStore(object)
+    );
+  }
+
+  onAccept(object: Material, direction: Direction): void {
+    game.removeObject(object);
+    this.storage.push(object);
+  }
+
+  logicUpdate() {
+    let cell = game.getCell(this.x, this.y)!;
+
+    for (let object of cell.objects) {
+      if (hasLogic(object)) {
+        object.logic(this);
+      }
+    }
+  }
+}
+
+interface Logic {
+  logic(automaton: Automaton): void;
+}
+
+function hasLogic(object: any): object is Logic {
+  return "logic" in object && typeof object.logic === "function";
+}
+
+export class Redirector extends GameObject implements Logic {
+  name = "Redirector";
+  description = "Redirect automatons";
+  sprite = new Sprite("logic_redirector");
+
+  canAccept(object: GameObject): object is Automaton {
+    return object instanceof Automaton;
+  }
+
+  canBeRotated(): boolean {
+    return true;
+  }
+
+  logic(automaton: Automaton) {
+    game.addAction(new Slide(automaton, this.direction));
+  }
+}
+
+export class Waiter extends GameObject implements Logic {
+  name = "Waiter";
+  description = "Automatons wait until full";
+  sprite = new Sprite("logic_waiter");
+  exitDirection: Direction = "north";
+
+  canAccept(object: GameObject): object is Automaton {
+    return object instanceof Automaton;
+  }
+
+  onAccept(object: GameObject, direction: Direction): void {
+    this.exitDirection = direction;
+  }
+
+  logic(automaton: Automaton) {
+    if (automaton.isFull()) {
+      game.addAction(new Slide(automaton, this.exitDirection));
+    }
+  }
+}
+
+export class Emptier extends GameObject implements Logic {
+  name = "Emptier";
+  description = "Automatons empty";
+  sprite = new Sprite("logic_emptier");
+  exitDirection: Direction = "north";
+  outputDirection: Direction = "west";
+
+  canAccept(object: GameObject): object is Automaton {
+    return object instanceof Automaton;
+  }
+
+  onAccept(object: GameObject, direction: Direction): void {
+    this.exitDirection = direction;
+  }
+
+  canOutput(output: GameObject): boolean {
+    let cell = game.getCellInDirection(this.x, this.y, this.outputDirection);
+    return cell != null && cell.canAccept(output, this.outputDirection);
+  }
+
+  logic(automaton: Automaton) {
+    if (automaton.isEmpty()) {
+      game.addAction(new Slide(automaton, this.exitDirection));
+      return;
+    }
+
+    let material = automaton.peek()!;
+
+    if (this.canOutput(material)) {
+      automaton.pop()!;
+      game.addObject(material, this.x, this.y);
+      game.addAction(new Slide(material, this.outputDirection));
+    }
+  }
+}
+
+export class Filter extends GameObject implements Logic {
+  name = "Filter";
+  description = "Filter automatons";
+  sprite = new Sprite("logic_filter");
+  component = Bar;
+  element = Gold;
+
+  canAccept(object: GameObject): object is Automaton {
+    return object instanceof Automaton;
+  }
+
+  matches(material: Material) {
+    return (
+      material.element === this.element &&
+      material.component === this.component
+    );
+  }
+
+  logic(automaton: Automaton) {
+    if (automaton.isEmpty() || !this.matches(automaton.storage[0])) {
+      game.addAction(new Slide(automaton, "west"));
+    } else {
+      game.addAction(new Slide(automaton, "east"));
     }
   }
 }

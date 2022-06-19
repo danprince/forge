@@ -386,23 +386,21 @@ function _tint(col: Fill): HTMLCanvasElement {
  * ---------------------- Input -------------------------
  */
 
-interface Pointer {
-  x: number;
-  y: number;
-  down: boolean;
-  pressed: boolean;
-  released: boolean;
-}
-
 /**
  * The current state of the mouse/pointer in canvas coordinates.
  */
-export let pointer: Pointer = {
+export let pointer = {
   x: 0,
   y: 0,
   down: false,
   pressed: false,
   released: false,
+};
+
+export let keyboard = {
+  pressed: new Set<string>(),
+  released: new Set<string>(),
+  down: new Set<string>(),
 };
 
 /**
@@ -430,6 +428,16 @@ function _pointerup(event: PointerEvent) {
 function _pointerdown(event: PointerEvent) {
   pointer.down = true;
   pointer.pressed = true;
+}
+
+function _keydown(event: KeyboardEvent) {
+  keyboard.down.add(event.key);
+  keyboard.pressed.add(event.key);
+}
+
+function _keyup(event: KeyboardEvent) {
+  keyboard.down.delete(event.key);
+  keyboard.released.add(event.key);
 }
 
 function _resize(event: UIEvent) {
@@ -777,6 +785,9 @@ function _update(dt: number) {
 
   // Reset frame state for pointer
   pointer.pressed = pointer.released = false;
+  // Reset frame state for keyboard
+  keyboard.pressed.clear();
+  keyboard.released.clear();
 }
 
 /**
@@ -796,6 +807,8 @@ export async function init(view: View) {
   await _load();
   _loop(_update);
   _root = view;
+  window.addEventListener("keydown", _keydown);
+  window.addEventListener("keyup", _keyup);
   window.addEventListener("pointermove", _pointermove);
   window.addEventListener("pointerup", _pointerup);
   window.addEventListener("pointerdown", _pointerdown);
