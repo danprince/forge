@@ -44,8 +44,6 @@ export class GoblinRaid extends Event {
   }
 
   stop() {
-    game.stopEvent();
-
     for (let cell of game.cells) {
       for (let object of cell.objects) {
         if (object instanceof GoblinTotem) {
@@ -57,7 +55,7 @@ export class GoblinRaid extends Event {
 
   update(dt: number): void {
     if (this.goblins.every(goblin => goblin.hp.current === 0)) {
-      this.stop();
+      game.stopEvent();
     }
   }
 }
