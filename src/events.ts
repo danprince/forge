@@ -1,10 +1,13 @@
 import { Slide } from "./actions";
 import { randomElement, shuffled } from "./engine";
 import { Direction, Event } from "./game";
-import { Goblin, GoblinBrute, GoblinLooter, GoblinShaman } from "./objects";
+import { Goblin, GoblinBrute, GoblinLooter, GoblinShaman, GoblinTotem } from "./objects";
+
+const GOBLIN_TYPES = [Goblin, GoblinBrute, GoblinLooter, GoblinShaman];
 
 export class GoblinRaid extends Event {
   name = "Goblin Raid";
+  goblins: InstanceType<typeof GOBLIN_TYPES[number]>[] = [];
 
   getSpawnCells() {
     return game.cells.filter(cell => {
@@ -19,11 +22,12 @@ export class GoblinRaid extends Event {
 
   start() {
     let cells = this.getSpawnCells();
+    let count = randomElement([3, 5, 7]);
     cells = shuffled(cells);
 
-    for (let i = 0; i < 10; i++) {
+    for (let i = 0; i < count; i++) {
       let cell = cells.pop();
-      let object = new (randomElement([Goblin, GoblinBrute, GoblinLooter, GoblinShaman]));
+      let object = new (randomElement(GOBLIN_TYPES));
       if (cell == null) break;
 
       let direction: Direction =
@@ -35,6 +39,25 @@ export class GoblinRaid extends Event {
 
       game.addObject(object, cell.x, cell.y);
       game.addAction(new Slide(object, direction));
+      this.goblins.push(object);
+    }
+  }
+
+  stop() {
+    game.stopEvent();
+
+    for (let cell of game.cells) {
+      for (let object of cell.objects) {
+        if (object instanceof GoblinTotem) {
+          game.removeObject(object);
+        }
+      }
+    }
+  }
+
+  update(dt: number): void {
+    if (this.goblins.every(goblin => goblin.hp.current === 0)) {
+      this.stop();
     }
   }
 }
