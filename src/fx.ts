@@ -95,9 +95,11 @@ export function createHealthEmitter(x: number, y: number) {
     initialLifeSpread: 400,
     gravity: -10,
     variants: [
-      ["p_heal", "p_heal_2"],
-      ["p_heal"],
-      ["p_heal_2"],
+      ["p_heal", "p7"],
+      ["p_heal", "p7", "p8"],
+      ["p_heal_2", "p8"],
+      ["p7"],
+      ["p8"],
     ],
   });
 }

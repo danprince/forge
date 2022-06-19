@@ -179,8 +179,10 @@ export class Heal extends Action {
 
   async run() {
     let { target } = this;
-    let [dx, dy] = ui.viewport.gridToGlobal(target.x + 0.5, target.y + 0.3);
+    let [dx, dy] = ui.viewport.gridToGlobal(target.x, target.y);
     let emitter = createHealthEmitter(dx, dy);
+    emitter.w = target.sprite.w;
+    emitter.h = target.sprite.h;
     emitter.start();
     await sleep(300);
     emitter.stopThenRemove();
