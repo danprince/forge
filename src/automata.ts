@@ -47,7 +47,7 @@ export class Automaton extends GameObject implements Storage {
 
     if (this.timer >= this.speed) {
       this.timer = 0;
-      let [gx, gy] = ui.viewport.gridToGlobal(this.x + 0.5, this.y + 0.5);
+      let [gx, gy] = ui.gridToGlobal(this.x + 0.5, this.y + 0.5);
       this.emitter.x = gx;
       this.emitter.y = gy;
       this.emitter.burst(2);

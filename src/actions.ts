@@ -25,7 +25,7 @@ export class Slide extends Action {
     let { object, direction } = this;
 
     let [dstX, dstY] = game.findPath(object, direction);
-    let [srcX, srcY] = ui.viewport.localToGrid(object.sprite.x, object.sprite.y);
+    let [srcX, srcY] = ui.localToGrid(object.sprite.x, object.sprite.y);
 
     // Calculate duration from speed in tiles per second
     let speed = 30;
@@ -33,7 +33,7 @@ export class Slide extends Action {
     let duration = distance / speed * 1000;
 
     // Calculate the final position for the sprite (local coordinate space)
-    let [lx1, ly1] = ui.viewport.gridToLocal(dstX, dstY);
+    let [lx1, ly1] = ui.gridToLocal(dstX, dstY);
 
     // Move the object behind the scenes
     game.moveObject(object, dstX, dstY);
@@ -162,7 +162,7 @@ export class Death extends Action {
   run() {
     let { target } = this;
     game.removeObject(target);
-    let [dx, dy] = ui.viewport.gridToGlobal(target.x + 0.5, target.y + 0.5);
+    let [dx, dy] = ui.gridToGlobal(target.x + 0.5, target.y + 0.5);
     let fx = createBloodEmitter(dx, dy);
     fx.burst(30);
     fx.stopThenRemove();
@@ -179,7 +179,7 @@ export class Heal extends Action {
 
   async run() {
     let { target } = this;
-    let [dx, dy] = ui.viewport.gridToGlobal(target.x, target.y);
+    let [dx, dy] = ui.gridToGlobal(target.x, target.y);
     let emitter = createHealthEmitter(dx, dy);
     emitter.w = target.sprite.w;
     emitter.h = target.sprite.h;

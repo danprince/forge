@@ -108,13 +108,23 @@ export function progress(x: number, y: number, w: number, h: number, value: numb
   rectfill(x, y, w * Math.min(value, 1) | 0, h, fg);
 }
 
-export function button(x: number, y: number, label: string, align: TextAlign = "left"): boolean {
+export function button(x: number, y: number, text: string, _align: TextAlign = "left"): boolean {
   let p = 3;
-  let [width, height] = measure(label);
+  let [width, height] = measure(text);
   let btnWidth = width + p * 2;
   let btnHeight = height + p * 2;
-  if (align === "center") x -= (btnWidth / 2 | 0);
-  if (align === "right") x -= btnWidth;
+  let textX = x + p;
+  let textY = y + p;
+
+  if (_align === "center") {
+    textX = x;
+    x -= (btnWidth / 2 | 0);
+  }
+
+  if (_align === "right") {
+    textX = x;
+    x -= btnWidth;
+  }
 
   let hover = over(x, y, btnWidth, btnHeight);
   let press = hover && pointer.down;
@@ -124,28 +134,32 @@ export function button(x: number, y: number, label: string, align: TextAlign = "
     btnHeight -= 1;
   }
 
+  save();
   panel(press ? "btn_active" : hover ? "btn_hover" : "btn", x, y, btnWidth, btnHeight);
-  print(label, x + p, y + p, "white", "black");
+  align(_align);
+  print(text, textX, textY, "white", "black");
+  restore();
 
   return hover && pointer.released;
 }
 
 export function dialogue(characterSprite: SpriteId, side: "left" | "right", lines: TextLine[]) {
-  let [w, h] = measureLines(lines);
+  let [textWidth, textHeight] = measureLines(lines);
+  let { x, y, w } = ui.layout.dialogue;
 
   save();
-  translate(ui.viewport.x, ui.viewport.y + ui.viewport.h);
+  translate(x, y);
 
   let portrait = atlas[characterSprite];
   let padding = 4;
-  let bubbleWidth = w + padding * 2;
-  let bubbleHeight = h + padding * 2 - 1;
+  let bubbleWidth = textWidth + padding * 2;
+  let bubbleHeight = textHeight + padding * 2 - 1;
   let bubbleX = side === "left"
     ? portrait.w - 6
-    : ui.viewport.w - bubbleWidth - portrait.w + 8;
+    : w - bubbleWidth - portrait.w + 8;
   let bubbleY = -bubbleHeight;
-  let backdropHeight = 18;
-  let backdropWidth = ui.viewport.w;
+  let backdropHeight = bubbleHeight + 2;
+  let backdropWidth = w;
   let backdropColor = "rgba(0, 0, 0, 0.5)";
   let portraitX = side === "left" ? 0 : backdropWidth - portrait.w;
   let portraitY = -portrait.h;

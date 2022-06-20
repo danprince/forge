@@ -1,21 +1,16 @@
 import "./style.css";
 import { Game, Material } from "./game";
-import { UI } from "./views";
+import { UI } from "./ui";
 import { init, shuffled } from "./engine";
 import { Bar, Gold, Iron, Ore, Sword } from "./crafting";
-import { swipeAndRotateHandler } from "./handlers";
 import { Anvil, Assembler, Automaton, Bucket, Emptier, Filter, Furnace, Goblin, GoblinBrute, GoblinLooter, GoblinShaman, GoblinTotem, Healer, Mule, Redirector, Waiter, Warrior } from "./objects";
 import "./crafting";
 import { SpawnOre } from "./actions";
 import { GoblinRaid } from "./events";
+import { GameView } from "./views";
 
-declare global {
-  const game: Game;
-  const ui: UI;
-}
-
-(window as any).game = new Game(10, 10);
-(window as any).ui = new UI(320, 180);
+new Game(11, 11);
+new UI(320, 180);
 
 game.addRecipe(Sword);
 game.addAction(new SpawnOre());
@@ -74,5 +69,5 @@ for (let i = 0; i < 20; i++) {
 game.swords = 3;
 game.coins = 999;
 
-ui.handler = swipeAndRotateHandler;
+ui.open(new GameView);
 init(ui.update);

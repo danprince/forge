@@ -106,7 +106,6 @@ let _state: DrawState = {
   textAlign: "left",
 };
 
-
 /**
  * Push the current draw state onto the stack and create a new one.
  */
@@ -402,6 +401,10 @@ export let keyboard = {
   released: new Set<string>(),
   down: new Set<string>(),
 };
+
+export let pressed = (key: string) => keyboard.pressed.has(key);
+export let released = (key: string) => keyboard.released.has(key);
+export let down = (key: string) => keyboard.down.has(key);
 
 /**
  * Check whether the pointer is currently over a given rectangle.

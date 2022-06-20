@@ -171,7 +171,7 @@ export class GameObject {
   }
 
   sync() {
-    let [x, y] = ui.viewport.gridToLocal(this.x, this.y);
+    let [x, y] = ui.gridToLocal(this.x, this.y);
     this.sprite.x = x;
     this.sprite.y = y;
     this.sprite.rotation = (this.rotation % 4) / 4 * (Math.PI * 2);
@@ -553,6 +553,10 @@ export abstract class Event {
   update(dt: number) {}
 }
 
+declare global {
+  const game: Game;
+}
+
 export class Game {
   cells: Cell[] = [];
   coins: number = 0;
@@ -573,6 +577,8 @@ export class Game {
   logicUpdateSpeed: number = 1_000;
 
   constructor(readonly columns: number, readonly rows: number) {
+    (window as any).game = this;
+
     for (let y = 0; y < this.rows; y++) {
       for (let x = 0; x < this.columns; x++) {
         this.cells[x + y * this.columns] = new Cell(x, y);

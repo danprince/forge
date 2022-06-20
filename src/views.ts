@@ -1,103 +1,53 @@
-import { panel, tooltip } from "./widgets";
-import { align, local, opacity, over, pointer, print, rectfill, resize, restore, save, screen, spr, SpriteId, sprr, translate } from "./engine";
-import { GameObject, ShopItem } from "./game";
+import { Rotate, Slide } from "./actions";
 import { hasStorage } from "./components";
+import { spr, sprr, save, translate, restore, over, align, rectfill, SpriteId, pointer, opacity, global, print, released, local } from "./engine";
+import { Direction, GameObject, ShopItem } from "./game";
+import { Panel, State, UIEvent, View } from "./ui";
+import { panel, tooltip } from "./widgets";
 
-export abstract class Panel {
-  x: number = 0;
-  y: number = 0;
-  w: number = 0;
-  h: number = 0;
+let SlideEvent = new UIEvent("slide");
+let RotateEvent = new UIEvent("rotate");
+let InspectEvent = new UIEvent("inspect");
+let ShopDragEvent = new UIEvent("shop/drag");
+let ShopDropEvent = new UIEvent("shop/drop");
 
-  render() {
-    save();
-    translate(this.x, this.y);
-    this.renderPanel();
-    restore();
-  }
+let DefaultState: State = new Set([
+  SlideEvent,
+  RotateEvent,
+  InspectEvent,
+  ShopDragEvent,
+]);
 
-  abstract renderPanel(): void;
-}
+let ShopDragState: State = new Set([
+  ShopDropEvent
+]);
 
-export class UI {
-  viewport: ViewportPanel;
-  shop: ShopPanel;
-  raidTimer: RaidTimerPanel;
-  currency: CurrencyPanel;
-  handler(dt: number): void {}
+export class GameView implements View {
+  viewport = new ViewportPanel(ui.layout.viewport);
+  sidebar = new SidebarPanel(ui.layout.sidebar);
 
-  constructor(width: number, height: number) {
-    resize(width, height);
-    this.viewport = new ViewportPanel();
-    this.currency = new CurrencyPanel();
-    this.shop = new ShopPanel();
-    this.raidTimer = new RaidTimerPanel();
-    this.currency.w = this.shop.w;
-    this.currency.x = this.viewport.x - this.currency.w - 5;
-    this.currency.y = this.viewport.y;
-    this.shop.h = this.viewport.h - this.raidTimer.h - this.currency.h - 9;
-    this.shop.x = this.viewport.x - this.shop.w - 5;
-    this.shop.y = this.viewport.y + this.currency.h + 5;
-    this.raidTimer.w = this.shop.w + 4;
-    this.raidTimer.x = this.shop.x - 2;
-    this.raidTimer.y = this.shop.y + this.shop.h + 3;
-    this.raidTimer.h = 13;
-  }
-
-  update = (dt: number) => {
-    this.handler(dt);
-    game.update(dt);
-    this.render();
+  onEnter() {
+    ui.pushState(DefaultState);
   }
 
   render() {
     this.viewport.render();
-    this.currency.render();
-    this.shop.render();
-    this.raidTimer.render();
-  }
-
-  pointerToGridExact(): [x: number, y: number] {
-    return ui.viewport.globalToGrid(pointer.x, pointer.y);
-  }
-
-  pointerToGrid(): [x: number, y: number] {
-    let [x, y] = ui.viewport.globalToGrid(pointer.x, pointer.y);
-    return [Math.floor(x), Math.floor(y)];
+    this.sidebar.render();
   }
 }
 
+interface GridActionState {
+  time: number;
+  object: GameObject;
+  origin: { x: number, y: number };
+  offset: { x: number, y: number };
+}
+
 export class ViewportPanel extends Panel {
-  tileSize = 15;
-
-  constructor() {
-    super();
-    let [w] = screen();
-    this.w = game.columns * this.tileSize;
-    this.h = game.rows * this.tileSize;
-    this.x = Math.floor(w / 2 - this.w / 2);
-    this.y = 3;
-  }
-
-  localToGrid(x: number, y: number): [x: number, y: number] {
-    return [x / this.tileSize, y / this.tileSize];
-  }
-
-  gridToLocal(x: number, y: number): [x: number, y: number] {
-    return [x * this.tileSize, y * this.tileSize];
-  }
-
-  globalToGrid(x: number, y: number) {
-    return this.localToGrid(x - this.x, y - this.y);
-  }
-
-  gridToGlobal(x: number, y: number) {
-    let [lx, ly] = this.gridToLocal(x, y);
-    return [lx + this.x, ly + this.y];
-  }
+  state: GridActionState | undefined;
 
   renderPanel() {
-    let ts = this.tileSize;
+    let ts = ui.tileSize;
 
     for (let y = 0; y < game.rows; y++) {
       for (let x = 0; x < game.columns; x++) {
@@ -121,13 +71,20 @@ export class ViewportPanel extends Panel {
     let [px, py] = ui.pointerToGrid();
     let object = game.getObject(px, py);
 
-    if (object) {
-      tooltip(this.w / 2, this.h + 2, [
-        object.description && ["#fff", object.description],
-        object.canBeRotated() && ["#666", "\x03Tap to rotate"],
-        object.canBeMoved() && ["#666", "\x04Drag to move"],
-      ], "center");
+    if (object && ui.isAllowed(InspectEvent)) {
+      tooltip(
+        this.w / 2 | 0,
+        this.h + 2,
+        [
+          object.description && ["#fff", object.description],
+          object.canBeRotated() && ["#666", "\x03Tap to rotate"],
+          object.canBeMoved() && ["#666", "\x04Drag to move"],
+        ],
+        "center"
+      );
     }
+
+    this.handleGridActions();
   }
 
   renderObject(object: GameObject) {
@@ -150,7 +107,7 @@ export class ViewportPanel extends Panel {
       restore();
     }
 
-    if (hasStorage(object)) {
+    if (ui.isAllowed(InspectEvent) && hasStorage(object)) {
       let { container } = object;
       let item = container.peek();
       if (item == null) return;
@@ -170,10 +127,133 @@ export class ViewportPanel extends Panel {
       }
     }
   }
+
+  handleGridActions() {
+    let [x, y] = ui.pointerToGridExact();
+    let gx = Math.floor(x);
+    let gy = Math.floor(y);
+
+    if (pointer.pressed) {
+      let object = game.getObject(gx, gy);
+
+      if (object && (object.canBeRotated() || object.canBeMoved())) {
+        this.state = {
+          origin: { x, y },
+          offset: { x: x - gx, y: y - gy },
+          time: Date.now(),
+          object,
+        };
+      }
+    }
+
+    else if (released("Escape") && this.state) {
+      this.state.object.sync();
+      this.state = undefined;
+    }
+
+    else if (pointer.released && this.state) {
+      let { origin, object } = this.state;
+
+      // Reset current action
+      this.state = undefined;
+
+      let canMove = object.canBeMoved() && ui.isAllowed(SlideEvent);
+      let canRotate = object.canBeRotated() && ui.isAllowed(RotateEvent);
+      let isMouseOverObject = gx === object.x && gy === object.y;
+
+      if (canRotate && !canMove && isMouseOverObject) {
+        game.changeEventTimer(1);
+        game.addAction(new Rotate(object));
+        return;
+      }
+
+      let deltaX = x - origin.x;
+      let deltaY = y - origin.y;
+      let distance = Math.hypot(deltaX, deltaY);
+      let threshold = 0.25; // TODO: threshold increase with duration
+      let direction: Direction = Math.abs(deltaX) > Math.abs(deltaY)
+        ? deltaX < 0 ? "west" : "east"
+        : deltaY < 0 ? "north" : "south";
+
+      if (canMove && distance > threshold) {
+        game.changeEventTimer(1);
+        game.addAction(new Slide(object, direction));
+        return;
+      }
+
+      if (canRotate && isMouseOverObject) {
+        game.changeEventTimer(1);
+        game.addAction(new Rotate(object));
+        return;
+      }
+
+      // We can't do anything, so just sync the object back
+      object.sync();
+    }
+
+    else if (this.state?.object.canBeMoved()) {
+      let { object, offset, origin } = this.state;
+
+      // Find the dominant movement axis
+      let dx = x - origin.x;
+      let dy = y - origin.y;
+      let sx = Math.abs(dx) > 2 * Math.abs(dy) ? 1 : 0;
+      let sy = Math.abs(dy) > 2 * Math.abs(dx) ? 1 : 0;
+
+      // Find target tile on dominant axis
+      let tx = origin.x + dx * sx;
+      let ty = origin.y + dy * sy;
+
+      let clear = game.hasClearPath(
+        object.x,
+        object.y,
+        Math.floor(tx),
+        Math.floor(ty),
+      );
+
+      if (clear) {
+        // Move the sprite to that tile
+        let ox = tx - offset.x;
+        let oy = ty - offset.y;
+        let [lx, ly] = ui.gridToLocal(ox, oy);
+        object.sprite.x = lx;
+        object.sprite.y = ly;
+      }
+    }
+  }
+}
+
+export class SidebarPanel extends Panel {
+  shop: ShopPanel;
+  raidTimer: RaidTimerPanel;
+  currency: CurrencyPanel;
+
+  constructor({ x = 0, y = 0, w = 0, h = 0}) {
+    super({ x, y, w, h });
+    this.currency = new CurrencyPanel();
+    this.shop = new ShopPanel();
+    this.raidTimer = new RaidTimerPanel();
+    this.currency.w = this.w - 1;
+    this.currency.x = 0;
+    this.currency.y = this.y + 1;
+    this.raidTimer.w = this.w + 3;
+    this.raidTimer.y = this.h - this.raidTimer.h + 4;
+    this.raidTimer.x = -2;
+    this.shop.h = this.h - this.raidTimer.h - this.currency.h - 4;
+    this.shop.w = this.w - 1;
+    this.shop.x = 0;
+    this.shop.y = this.y + this.currency.h + 4;
+  }
+
+  renderPanel(): void {
+    this.currency.render();
+    this.shop.render();
+    this.raidTimer.render();
+  }
 }
 
 export class RaidTimerPanel extends Panel {
-  h = 10;
+  h = 13;
 
   renderPanel() {
     let value = game.event ? 1 : game.eventTimer / game.nextEventTime;
@@ -190,24 +270,8 @@ export class RaidTimerPanel extends Panel {
   }
 }
 
-// TODO: The shop shouldn't really be responsible for this. Once
-// we're into placement then we should be overriding the default
-// handler and rendering from somewhere else.
-
-export interface Placement {
-  object: GameObject;
-  offsetX: number;
-  offsetY: number;
-  canPlace(x: number, y: number): boolean;
-  onPlaced(): void;
-  onCanceled(): void;
-}
-
 export class CurrencyPanel extends Panel {
-  constructor() {
-    super();
-    this.h = 12;
-  }
+  h = 12;
 
   renderPanel() {
     panel("panel_frame_brown", -2, -2, this.w + 4, this.h + 4);
@@ -237,103 +301,55 @@ export class CurrencyPanel extends Panel {
   }
 }
 
+export interface GridPlacement {
+  object: GameObject;
+  item: ShopItem;
+  offsetX: number;
+  offsetY: number;
+}
+
 export class ShopPanel extends Panel {
-  grid = new ShopGridPanel(3, 6);
-  placement: Placement | undefined;
-
-  constructor() {
-    super();
-    this.w = this.grid.w - 1;
-
-    this.grid.onPickupItem = (item, offsetX, offsetY) => {
-      if (this.placement != null) return;
-      if (!game.shop.canAfford(item)) return;
-
-      this.placement = {
-        object: item.create(),
-        offsetX,
-        offsetY,
-        canPlace() {
-          return game.shop.canAfford(item);
-        },
-        onPlaced() {
-          game.shop.buy(item);
-        },
-        onCanceled() {
-
-        },
-      };
-    };
-  }
+  private cellWidth = 20;
+  private cellHeight = 20;
+  private placement: GridPlacement | undefined;
 
   renderPanel() {
     panel("panel_frame_brown", -2, -2, this.w + 4, this.h + 4);
-    this.grid.render();
+    this.renderGrid(3, 6);
     this.renderPlacement();
   }
 
   renderPlacement() {
-    if (!this.placement) return;
-    let { object, offsetX, offsetY } = this.placement;
-
+    if (this.placement == null) return;
+    let { placement } = this;
     let [gridX, gridY] = ui.pointerToGrid();
-    let [x, y] = local(pointer.x - offsetX, pointer.y - offsetY);
-
-    if (pointer.released) {
-      let cell = game.getCell(gridX, gridY);
-
-      if (cell?.isEmpty() && this.placement.canPlace(gridX, gridY)) {
-        game.addObject(object, gridX, gridY);
-        this.placement.onPlaced();
-      } else {
-        this.placement.onCanceled();
-      }
-
-      this.placement = undefined;
-      return;
-    }
 
     if (game.inBounds(gridX, gridY)) {
       // Snap to grid
-      let [globalX, globalY] = ui.viewport.gridToGlobal(gridX, gridY);
+      let [globalX, globalY] = ui.gridToGlobal(gridX, gridY);
       let [localX, localY] = local(globalX, globalY);
       save();
       opacity(0.5);
-      spr(this.placement.object.sprite.name, localX, localY);
+      spr(placement.object.sprite.name, localX, localY);
       restore();
     } else {
-      spr(this.placement.object.sprite.name, x, y);
+      let [localX, localY] = local(pointer.x, pointer.y);
+      let x = localX - placement.offsetX;
+      let y = localY - placement.offsetY;
+      spr(placement.object.sprite.name, x, y);
+    }
+
+    if (released("Escape")) {
+      this.placement = undefined;
+    } else if (pointer.released) {
+      this.onReleaseItem(gridX, gridY);
     }
   }
 
-}
-
-export class ShopGridPanel extends Panel {
-  private cellWidth = 20;
-  private cellHeight = 20;
-
-  rows: number;
-  columns: number;
-
-  constructor(columns: number, rows: number) {
-    super();
-    this.rows = rows;
-    this.columns = columns;
-    this.w = columns * this.cellWidth;
-    this.h = rows * this.cellHeight;
-  }
-
-  // Parent view should swap this out.
-  onPickupItem(
-    item: ShopItem,
-    offsetX: number,
-    offsetY: number,
-  ) {}
-
-  renderPanel() {
-    for (let y = 0; y < this.rows; y++) {
-      for (let x = 0; x < this.columns; x++) {
-        let i = x + y * this.columns;
+  renderGrid(columns: number, rows: number) {
+    for (let y = 0; y < rows; y++) {
+      for (let x = 0; x < columns; x++) {
+        let i = x + y * columns;
         let item = game.shop.items[i];
 
         if (item) {
@@ -361,7 +377,7 @@ export class ShopGridPanel extends Panel {
     spr(item.sprite, localSpriteX, localSpriteY);
     restore();
 
-    if (hover) {
+    if (hover && ui.isAllowed(InspectEvent)) {
       let costs: string[] = [];
       if (item.cost.coins) costs.push(`\x06${item.cost.coins}`);
       if (item.cost.swords) costs.push(`\x07${item.cost.swords}`);
@@ -373,11 +389,49 @@ export class ShopGridPanel extends Panel {
       ]);
     }
 
-    if (hover && pointer.pressed) {
-      let [localPointerX, localPointerY] = local(pointer.x, pointer.y);
-      let offsetX = localPointerX - localSpriteX;
-      let offsetY = localPointerY - localSpriteY;
-      this.onPickupItem(item, offsetX, offsetY);
+    if (hover && pointer.pressed && ui.isAllowed(ShopDragEvent)) {
+      let [spriteX, spriteY] = global(localSpriteX, localSpriteY);
+      let offsetX = pointer.x - spriteX;
+      let offsetY = pointer.y - spriteY;
+
+      if (game.shop.canAfford(item)) {
+        this.onPickupItem(item, offsetX, offsetY);
+      }
     }
+  }
+
+  private onPickupItem(item: ShopItem, offsetX: number, offsetY: number) {
+    ui.pushState(ShopDragState);
+
+    this.placement = {
+      object: item.create(),
+      item,
+      offsetX,
+      offsetY,
+    };
+  }
+
+  private onReleaseItem(gridX: number, gridY: number) {
+    let placement = this.placement!;
+
+    if (
+      ui.isAllowed(ShopDropEvent) &&
+      this.canPlace(gridX, gridY, placement.item)
+    ) {
+      game.shop.buy(placement.item);
+      game.addObject(placement.object, gridX, gridY);
+    }
+
+    this.placement = undefined;
+    ui.popState(ShopDragState);
+  }
+
+  private canPlace(x: number, y: number, item: ShopItem) {
+    let cell = game.getCell(x, y);
+
+    return (
+      cell?.isEmpty() &&
+      game.shop.canAfford(item)
+    );
   }
 }

@@ -74,8 +74,8 @@ export let Sword = new Recipe([
   let x1 = Math.max(...cells.map(c => c.x)) + 0.5;
   let y0 = Math.min(...cells.map(c => c.y)) + 0.5;
   let y1 = Math.max(...cells.map(c => c.y)) + 0.5;
-  let [dx0, dy0] = ui.viewport.gridToGlobal(x0, y0);
-  let [dx1, dy1] = ui.viewport.gridToGlobal(x1, y1);
+  let [dx0, dy0] = ui.gridToGlobal(x0, y0);
+  let [dx1, dy1] = ui.gridToGlobal(x1, y1);
   let dw = dx1 - dx0;
   let dh = dy1 - dy0;
 
@@ -83,7 +83,7 @@ export let Sword = new Recipe([
   let coins = calculateReward(score);
 
   game.swords += 1;
-  game.coins = coins;
+  game.coins += coins;
 
   let fx = createCoinEmitter(dx0, dy0, dw, dh);
   fx.burst(coins);

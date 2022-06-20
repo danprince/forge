@@ -79,7 +79,7 @@ export class Furnace extends GameObject {
   }
 
   private async emitSmoke() {
-    let [ex, ey] = ui.viewport.gridToGlobal(this.x + 0.4, this.y - 0.1);
+    let [ex, ey] = ui.gridToGlobal(this.x + 0.4, this.y - 0.1);
     let emitter = createSmokeEmitter(ex, ey);
     emitter.start();
     await sleep(500);
@@ -162,7 +162,7 @@ export class Anvil extends GameObject {
   }
 
   private async emitSparks() {
-    let [ex, ey] = ui.viewport.gridToGlobal(this.x + 0.5, this.y + 0.5);
+    let [ex, ey] = ui.gridToGlobal(this.x + 0.5, this.y + 0.5);
     let emitter = createSparkEmitter(ex, ey);
     emitter.burst(20);
     await sleep(200);
@@ -213,7 +213,7 @@ export class Mule extends GameObject {
   }
 
   private flashOfGold(coins: number) {
-    let [ex, ey] = ui.viewport.gridToGlobal(this.x + 0.5, this.y + 0.5);
+    let [ex, ey] = ui.gridToGlobal(this.x + 0.5, this.y + 0.5);
     let fx = createCoinEmitter(ex, ey, 0, 0);
     fx.burst(coins);
     return fx.stopThenRemove();
@@ -244,7 +244,7 @@ export class Goblin extends GameObject {
   }
 
   private puffOfSmoke() {
-    let [ex, ey] = ui.viewport.gridToGlobal(this.x + 0.5, this.y + 0.5);
+    let [ex, ey] = ui.gridToGlobal(this.x + 0.5, this.y + 0.5);
     let fx = createSmokeEmitter(ex, ey);
     fx.initialAngleSpread = Math.PI * 2;
     fx.floorLevel = -Infinity;
@@ -285,7 +285,7 @@ export class GoblinBrute extends GameObject {
   }
 
   private puffOfSmoke() {
-    let [ex, ey] = ui.viewport.gridToGlobal(this.x + 0.5, this.y + 0.5);
+    let [ex, ey] = ui.gridToGlobal(this.x + 0.5, this.y + 0.5);
     let fx = createSmokeEmitter(ex, ey);
     fx.initialAngleSpread = Math.PI * 2;
     fx.floorLevel = -Infinity;
