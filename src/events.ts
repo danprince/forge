@@ -44,6 +44,12 @@ export class GoblinRaid extends Event {
   }
 
   stop() {
+    let upgrade = randomElement(game.getAvailableUpgrades());
+
+    if (upgrade) {
+      game.addUpgrade(upgrade);
+    }
+
     for (let cell of game.cells) {
       for (let object of cell.objects) {
         if (object instanceof GoblinTotem) {

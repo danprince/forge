@@ -3,24 +3,46 @@ import { Game, Material } from "./game";
 import { UI } from "./ui";
 import { init, shuffled } from "./engine";
 import { Bar, Gold, Iron, Ore, Sword } from "./crafting";
-import { Anvil, Assembler, Automaton, Bucket, Emptier, Filter, Furnace, Goblin, GoblinBrute, GoblinLooter, GoblinShaman, GoblinTotem, Healer, Mule, Redirector, Waiter, Warrior } from "./objects";
+import { Anvil, Assembler, Automaton, Bank, Bucket, Emptier, Filter, Furnace, Goblin, GoblinBrute, GoblinLooter, GoblinShaman, GoblinTotem, Healer, Mule, Redirector, Waiter, Warrior, Whetstone } from "./objects";
 import "./crafting";
 import { SpawnOre } from "./actions";
 import { GoblinRaid } from "./events";
 import { GameView } from "./views";
+import { ArchaicUpgrade, BloodlustUpgrade, ClockworkUpgrade, DiscountUpgrade, FlairUpgrade, HaggleUpgrade, HeadhunterUpgrade, InvestmentUpgrade, MidasUpgrade, NimbleUpgrade, ProspectorUpgrade, RallyUpgrade, RenownUpgrade, ShortcutUpgrade, SturdyUpgrade } from "./upgrades";
 
 new Game(11, 11);
 new UI(320, 180);
 
 game.addRecipe(Sword);
-game.addAction(new SpawnOre());
+
+// Events
 game.addEventToPool(GoblinRaid);
 
+// Upgrades
+game.addUpgradeToPool(new SturdyUpgrade);
+game.addUpgradeToPool(new NimbleUpgrade);
+game.addUpgradeToPool(new RallyUpgrade);
+game.addUpgradeToPool(new HeadhunterUpgrade);
+game.addUpgradeToPool(new BloodlustUpgrade);
+game.addUpgradeToPool(new ProspectorUpgrade);
+game.addUpgradeToPool(new ClockworkUpgrade);
+game.addUpgradeToPool(new HaggleUpgrade);
+game.addUpgradeToPool(new InvestmentUpgrade);
+game.addUpgradeToPool(new ShortcutUpgrade);
+game.addUpgradeToPool(new RenownUpgrade);
+game.addUpgradeToPool(new MidasUpgrade);
+game.addUpgradeToPool(new ArchaicUpgrade);
+game.addUpgradeToPool(new DiscountUpgrade);
+game.addUpgradeToPool(new FlairUpgrade);
+
+// Shop
 //            Sprite                   Coins  Swords  Create
 game.shop.add("mule_idle_1",           50,     0,     () => new Mule());
 game.shop.add("furnace",               20,     0,     () => new Furnace());
 game.shop.add("anvil",                 20,     0,     () => new Anvil());
+game.shop.add("whetstone_1",           75,     0,     () => new Whetstone());
 game.shop.add("assembler_1",           20,     0,     () => new Assembler());
+game.shop.add("bank",                 100,     0,     () => new Bank());
 game.shop.add("logic_redirector",      20,     0,     () => new Redirector());
 game.shop.add("logic_emptier",         20,     0,     () => new Emptier());
 game.shop.add("logic_waiter",          20,     0,     () => new Waiter());
@@ -37,6 +59,12 @@ game.shop.add("bar_gold",               0,     0,     () => Material.of(Gold, Ba
 game.shop.add("bar_iron",               0,     0,     () => Material.of(Iron, Bar)!);
 game.shop.add("ore_gold",               0,     0,     () => Material.of(Gold, Ore)!);
 game.shop.add("ore_iron",               0,     0,     () => Material.of(Iron, Ore)!);
+
+// Initial shop unlocks
+game.shop.unlock(Furnace);
+game.shop.unlock(Anvil);
+game.shop.unlock(Mule);
+game.shop.unlock(Warrior);
 
 let cells = shuffled(game.cells);
 
@@ -68,6 +96,7 @@ for (let i = 0; i < 20; i++) {
 
 game.swords = 3;
 game.coins = 999;
+game.addAction(new SpawnOre());
 
 ui.open(new GameView);
 init(ui.update);

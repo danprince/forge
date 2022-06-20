@@ -192,7 +192,6 @@ export class GameObject {
   update(dt: number) {}
 }
 
-
 export enum Symmetry {
   None = "none",
   TwoWay = "two-way",
@@ -504,6 +503,7 @@ export interface ShopItem {
   sprite: SpriteId;
   cost: Cost;
   create(): GameObject;
+  locked: boolean;
   _reference: GameObject;
 }
 
@@ -518,8 +518,19 @@ export class Shop {
       sprite,
       cost: { coins, swords },
       create,
+      locked: true,
       _reference: create(),
     });
+  }
+
+  unlock(itemType: Constructor<GameObject>) {
+    let item = this.items.find(item => item._reference instanceof itemType);
+    item!.locked = false;
+  }
+
+  unlockByCondition(predicate: (object: GameObject) => boolean) {
+    let item = this.items.find(item => predicate(item._reference));
+    item!.locked = false;
   }
 
   addItem(item: ShopItem) {
@@ -543,6 +554,8 @@ export abstract class Upgrade {
   abstract readonly sprite: SpriteId;
   abstract readonly name: string;
   abstract readonly description: string;
+  abstract requires: Constructor<Upgrade>[];
+  onAction(action: Action) {}
   apply() {}
 }
 
@@ -565,8 +578,19 @@ export class Game {
   actions: Action[] = [];
   shop = new Shop();
 
+  modifiers = {
+    warriorBaseHealth: 2,
+    damageReductionChance: 0,
+    unlockedElements: [] as Element[],
+    baseTradePriceMultiplier: 0,
+    baseShopDiscount: 0,
+    anvilCraftSwordChance: 0,
+    baseSetBonusMultiplier: 0,
+  };
+
   upgrades: Upgrade[] = [];
   nextUpgradeCost: number = 100;
+  private upgradePool: Upgrade[] = [];
 
   event: Event | undefined;
   nextEventTime: number = 100;
@@ -584,6 +608,18 @@ export class Game {
         this.cells[x + y * this.columns] = new Cell(x, y);
       }
     }
+  }
+
+  addUpgradeToPool(upgrade: Upgrade) {
+    this.upgradePool.push(upgrade);
+  }
+
+  getAvailableUpgrades() {
+    return this.upgradePool.filter(upgrade => {
+      return upgrade.requires.every(requirement => {
+        return this.upgrades.some(upgrade => upgrade instanceof requirement);
+      });
+    });
   }
 
   addEventToPool(eventType: Constructor<Event>) {
@@ -615,11 +651,21 @@ export class Game {
   }
 
   addUpgrade(upgrade: Upgrade) {
+    this.upgradePool.splice(this.upgradePool.indexOf(upgrade), 1);
     this.upgrades.push(upgrade);
     upgrade.apply();
   }
 
+  addEventAction(action: Action) {
+    this.changeEventTimer(1);
+    this.addAction(action);
+  }
+
   addAction(action: Action) {
+    for (let upgrade of this.upgrades) {
+      upgrade.onAction(action);
+    }
+
     this.actions.push(action);
     action.start();
   }

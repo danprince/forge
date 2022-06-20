@@ -1,7 +1,7 @@
 import { Rotate, Slide } from "./actions";
 import { hasStorage } from "./components";
 import { spr, sprr, save, translate, restore, over, align, rectfill, SpriteId, pointer, opacity, global, print, released, local } from "./engine";
-import { Direction, GameObject, ShopItem } from "./game";
+import { Direction, GameObject, ShopItem, Upgrade } from "./game";
 import { Panel, State, UIEvent, View } from "./ui";
 import { panel, tooltip } from "./widgets";
 
@@ -24,7 +24,8 @@ let ShopDragState: State = new Set([
 
 export class GameView implements View {
   viewport = new ViewportPanel(ui.layout.viewport);
-  sidebar = new SidebarPanel(ui.layout.sidebar);
+  sidebar = new SidebarPanel(ui.layout.shop);
+  upgrades = new UpgradePanel(ui.layout.upgrades);
 
   onEnter() {
     ui.pushState(DefaultState);
@@ -33,6 +34,7 @@ export class GameView implements View {
   render() {
     this.viewport.render();
     this.sidebar.render();
+    this.upgrades.render();
   }
 }
 
@@ -347,12 +349,14 @@ export class ShopPanel extends Panel {
   }
 
   renderGrid(columns: number, rows: number) {
+    let unlockedItems = game.shop.items.filter(item => !item.locked);
+
     for (let y = 0; y < rows; y++) {
       for (let x = 0; x < columns; x++) {
         let i = x + y * columns;
-        let item = game.shop.items[i];
+        let item = unlockedItems[i];
 
-        if (item) {
+        if (item && !item.locked) {
           this.slot(x, y, item);
         }
       }
@@ -433,5 +437,46 @@ export class ShopPanel extends Panel {
       cell?.isEmpty() &&
       game.shop.canAfford(item)
     );
+  }
+}
+
+export class UpgradePanel extends Panel {
+  private cellWidth = 20;
+  private cellHeight = 20;
+
+  renderPanel() {
+    panel("panel_frame_brown", -2, -2, this.w + 4, this.h + 4);
+    this.renderGrid(3, 6);
+  }
+
+  renderGrid(columns: number, rows: number) {
+    for (let y = 0; y < rows; y++) {
+      for (let x = 0; x < columns; x++) {
+        let i = x + y * columns;
+        let upgrade = game.upgrades[i];
+        if (upgrade) {
+          this.slot(x, y, upgrade);
+        }
+      }
+    }
+  }
+
+  slot(x: number, y: number, upgrade: Upgrade) {
+    let dw = this.cellWidth;
+    let dh = this.cellHeight;
+    let dx = x * dw;
+    let dy = y * dh;
+    let hover = over(dx, dy, dw, dh);
+
+    //panel(hover ? "panel_grey_round_hover" : "panel_grey_round", dx, dy, this.cellWidth - 1, this.cellHeight - 1);
+    spr("upgrade_frame", dx, dy);
+    spr(upgrade.sprite, dx, dy);
+
+    if (hover && ui.isAllowed(InspectEvent)) {
+      tooltip(dx - 4, dy, [
+        ["white", upgrade.name],
+        ["#aaa", upgrade.description],
+      ], "right");
+    }
   }
 }

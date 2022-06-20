@@ -44,8 +44,9 @@ export abstract class Panel {
 export class UI {
   readonly layout = {
     viewport: { x: 0, y: 0, w: 0, h: 0 },
-    sidebar: { x: 0, y: 0, w: 0, h: 0 },
+    shop: { x: 0, y: 0, w: 0, h: 0 },
     dialogue: { x: 0, y: 0, w: 0, h: 0 },
+    upgrades: { x: 0, y: 0, w: 0, h: 0 },
   };
 
   tileSize = atlas["tile_1"].w;
@@ -64,10 +65,15 @@ export class UI {
     layout.viewport.x = Math.floor(width / 2 - layout.viewport.w / 2);
     layout.viewport.y = 3;
 
-    layout.sidebar.w = 60;
-    layout.sidebar.h = layout.viewport.h;
-    layout.sidebar.x = layout.viewport.x - layout.sidebar.w - 4;
-    layout.sidebar.y = layout.viewport.y - 2;
+    layout.shop.w = 60;
+    layout.shop.h = layout.viewport.h;
+    layout.shop.x = layout.viewport.x - layout.shop.w - 4;
+    layout.shop.y = layout.viewport.y - 2;
+
+    layout.upgrades.w = 60;
+    layout.upgrades.h = layout.viewport.h;
+    layout.upgrades.x = layout.viewport.x + layout.viewport.w + 5;
+    layout.upgrades.y = layout.viewport.y;
 
     layout.dialogue.w = layout.viewport.w;
     layout.dialogue.x = layout.viewport.x;

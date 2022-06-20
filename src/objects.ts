@@ -1,5 +1,6 @@
 import { ChangeHP, Damage, Heal, Slide } from "./actions";
-import { Bar, Ore, SwordBlade, SwordHandle, SwordTip } from "./crafting";
+import { Container, Storage } from "./components";
+import { Bar, Gold, Ore, Straight, SwordBlade, SwordHandle, SwordTip } from "./crafting";
 import { randomElement, sleep } from "./engine";
 import { createCoinEmitter, createSmokeEmitter, createSparkEmitter } from "./fx";
 import { AnimatedSprite, Direction, DIRECTIONS, directionToRotation, GameObject, Material, Sprite, Tags } from "./game";
@@ -110,6 +111,7 @@ export class Anvil extends GameObject {
     return Material.createByRarity({
       component: [SwordTip, SwordBlade, SwordHandle],
       element: material.element,
+      set: [Straight],
     });
   }
 
@@ -498,5 +500,116 @@ export class Bucket extends GameObject {
     if (object.canBeMoved()) {
       game.addAction(new Slide(object, direction));
     }
+  }
+}
+
+export class Bank extends GameObject implements Storage {
+  name = "Banks";
+  description = "Invests gold bars";
+  timer = 0;
+  speed = 10_000;
+  emitter = createCoinEmitter(0, 0, 0, 0);
+
+  container = new Container<Material>({
+    capacity: 16,
+    rule: (object: GameObject): object is Material => {
+      return (
+        object instanceof Material &&
+        object.element === Gold &&
+        object.component === Bar
+      );
+    }
+  })
+
+  sprite = new Sprite("bank");
+
+  canBeMoved(): boolean {
+    return true;
+  }
+
+  canAccept(object: GameObject): object is Material {
+    return this.container.canStore(object);
+  }
+
+  onAccept(object: GameObject, direction: Direction): void {
+    if (this.container.canStore(object)) {
+      game.removeObject(object);
+      this.container.push(object);
+    }
+  }
+
+  update(dt: number) {
+    this.timer += dt;
+    if (this.timer >= this.speed) {
+      this.timer = 0;
+      let coins = this.container.objects.length;
+      game.coins += coins;
+      this.emitter.x = this.sprite.x;
+      this.emitter.y = this.sprite.y;
+      this.emitter.burst(coins);
+    }
+  }
+}
+
+export class Whetstone extends GameObject {
+  name = "Whetstone";
+  description = "Refines sword blades";
+
+  sprite = new AnimatedSprite({
+    idle: {
+      loop: true,
+      speed: 100,
+      frames: ["whetstone_1", "whetstone_2", "whetstone_3"],
+    },
+  }, "idle");
+
+  canBeMoved() {
+    return true;
+  }
+
+  isOutputClear(material: Material, direction: Direction): boolean {
+    let cell = game.getCellInDirection(this.x, this.y, direction);
+    let output = this.createOutput(material);
+    return (
+      cell != null &&
+      output != null &&
+      cell.canAccept(output, direction)
+    );
+  }
+
+  createOutput(material: Material): Material | undefined {
+    return Material.createByRarity({
+      component: material.component,
+      element: material.element,
+    });
+  }
+
+  canAccept(object: GameObject, direction: Direction): object is Material {
+    return (
+      object instanceof Material &&
+      [SwordTip, SwordBlade].includes(object.component) &&
+      this.isOutputClear(object, direction)
+    );
+  }
+
+  onAccept(part: Material, direction: Direction): void {
+    let newPart = this.createOutput(part);
+    game.removeObject(part);
+
+    if (newPart) {
+      newPart.rotation = part.rotation;
+      game.addObject(newPart, this.x, this.y);
+      game.addAction(new Slide(newPart, direction));
+    }
+
+    this.emitSmoke();
+  }
+
+  private async emitSmoke() {
+    let [ex, ey] = ui.gridToGlobal(this.x + 0.4, this.y - 0.1);
+    let emitter = createSmokeEmitter(ex, ey);
+    emitter.start();
+    await sleep(500);
+    return emitter.stopThenRemove();
   }
 }
