@@ -310,6 +310,9 @@ export function measure(text: string): [w: number, h: number] {
  * @param shadow The text shadow color (defaults to current shadow)
  */
 export function print(text: string, x = _state.cursorX, y = _state.cursorY, col = _state.color, shadow = _state.textShadowColor) {
+  x |= 0;
+  y |= 0;
+
   if (_state.textAlign === "center") {
     let [w] = measure(text);
     x -= Math.floor(w / 2);
