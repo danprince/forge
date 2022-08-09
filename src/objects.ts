@@ -181,7 +181,7 @@ export class Mule extends GameObject {
     "idle": {
       speed: 400,
       loop: true,
-      frames: ["mule_idle_2", "mule_idle_2"],
+      frames: ["mule_idle_1", "mule_idle_2"],
     },
   }, "idle");
 
