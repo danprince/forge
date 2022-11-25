@@ -4,6 +4,7 @@
   "version": "0.0.0",
   "scripts": {
     "dev": "vite",
+    "prebuild": "rm -rf dist dist.zip",
     "build": "tsc && vite build && zip dist.zip -r dist/*",
     "preview": "vite preview"
   },
