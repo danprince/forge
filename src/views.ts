@@ -450,10 +450,11 @@ export class UpgradePanel extends Panel {
   }
 
   renderGrid(columns: number, rows: number) {
+    let upgrades = game.getAvailableUpgrades();
     for (let y = 0; y < rows; y++) {
       for (let x = 0; x < columns; x++) {
         let i = x + y * columns;
-        let upgrade = game.upgrades[i];
+        let upgrade = upgrades[i];
         if (upgrade) {
           this.slot(x, y, upgrade);
         }

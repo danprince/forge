@@ -518,7 +518,8 @@ export class Shop {
       sprite,
       cost: { coins, swords },
       create,
-      locked: true,
+      // Items are unlocked by default for testing purposes
+      locked: false,
       _reference: create(),
     });
   }
@@ -616,9 +617,11 @@ export class Game {
 
   getAvailableUpgrades() {
     return this.upgradePool.filter(upgrade => {
-      return upgrade.requires.every(requirement => {
-        return this.upgrades.some(upgrade => upgrade instanceof requirement);
-      });
+      // Unlock all upgrades for testing purposes
+      return true;
+      //return upgrade.requires.every(requirement => {
+      //  return this.upgrades.some(upgrade => upgrade instanceof requirement);
+      //});
     });
   }
 
