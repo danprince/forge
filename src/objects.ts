@@ -112,6 +112,9 @@ export class Anvil extends GameObject {
       component: [SwordTip, SwordBlade, SwordHandle],
       element: material.element,
       set: [Straight],
+    }) || Material.createByRarity({
+      component: [SwordTip, SwordBlade, SwordHandle],
+      element: material.element,
     });
   }
 
